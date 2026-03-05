@@ -15,9 +15,9 @@ f = 100.0
 
 t = generate_time(t1, d, f)
 
-noise_uniform = generators.noise_uniform(A, t) #S1
+noise_uniform = generators.szum_jednostajny(A, t) #S1
 
-noise_gauss = generators.noise_gauss(A, t) #S2
+noise_gauss = generators.szum_gaussa(A, t) #S2
 
 print("--------------- S1: ---------------")
 print(noise_uniform)
