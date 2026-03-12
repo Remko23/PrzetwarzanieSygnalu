@@ -5,11 +5,9 @@ class SignalGenerator:
     def __init__(self, signal_source=None, gen_factory=None, fs=1000.0, **kwargs):
         self.fs = fs
         self.params = kwargs
-        # licznik próbek
         self.n = 0
 
         self.methods = {
-            # sygnały ciągłe
             "s1": self._s1_uniform_noise,
             "s2": self._s2_gaussian_noise,
             "s3": self._s3_sine,
@@ -19,10 +17,8 @@ class SignalGenerator:
             "s7": self._s7_symmetrical_rectangular,
             "s8": self._s8_triangular,
             "s9": self._s9_unit_step,
-            # sygnały dyskretne
             "s10": self._s10_unit_impulse,
             "s11": self._s11_impulse_noise,
-            # sygnały zespolone
             "s12": self._s12_complex_sine,
         }
 

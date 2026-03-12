@@ -10,60 +10,71 @@ class SignalVisualizer:
         else:
             ax_time.plot(time_axis, data, color=color, linewidth=1)
         ax_time.set_ylabel(label)
-        ax_time.grid(True, linestyle='--', alpha=0.7)
+        ax_time.grid(True, linestyle='--', color='gray', alpha=0.5)
 
         data_min = np.min(data)
         data_max = np.max(data)
 
         if np.isclose(data_min, data_max):
-            ax_hist.hist(data, bins=1, color=color, edgecolor='black', alpha=0.7)
+            ax_hist.hist(data, bins=1, color=color, edgecolor='white', alpha=0.7)
             ax_hist.set_title(f"Histogram (wartość stała: {data_min:.2f})")
         else:
-            ax_hist.hist(data, bins=n_bins, color=color, edgecolor='black', alpha=0.7)
+            ax_hist.hist(data, bins=n_bins, color=color, edgecolor='white', alpha=0.7)
 
         ax_hist.set_ylabel("Częstość")
 
     @staticmethod
     def plot_all(signal_generator, n_samples, n_bins, is_discrete=False, title="Analiza Sygnału"):
+        plt.style.use('dark_background')
         signal_generator.reset()
         samples = np.array([next(signal_generator) for _ in range(n_samples)])
         signal_generator.reset()
 
         time_axis = np.arange(n_samples) / signal_generator.fs
+        
+        figs = []
 
         if not np.iscomplexobj(samples):
             # --- SYGNAŁ RZECZYWISTY ---
             fig, (ax_time, ax_hist) = plt.subplots(2, 1, figsize=(10, 8))
+            fig.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
             fig.suptitle(title)
-            SignalVisualizer._plot_common(time_axis, samples.real, ax_time, ax_hist, n_bins, "Amplituda", "blue",
+            SignalVisualizer._plot_common(time_axis, samples.real, ax_time, ax_hist, n_bins, "Amplituda", "cyan",
                                           is_discrete)
             ax_time.set_title("Przebieg czasowy")
             ax_hist.set_title("Histogram")
+            fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+            figs.append(("Sygnał Rzeczywisty", fig))
         else:
             # --- SYGNAŁ ZESPOLONY ---
             for plot_type in ['re_im', 'mod_ph']:
                 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+                fig.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
                 fig.suptitle(f"{title} - {plot_type.upper()}")
 
                 if plot_type == 're_im':
                     # Wykres Re i Im
                     SignalVisualizer._plot_common(time_axis, samples.real, axes[0, 0], axes[0, 1], n_bins, "Real",
-                                                  "blue", is_discrete)
+                                                  "cyan", is_discrete)
                     SignalVisualizer._plot_common(time_axis, samples.imag, axes[1, 0], axes[1, 1], n_bins, "Imag",
-                                                  "red", is_discrete)
-                    axes[0, 0].set_title("Real Part");
+                                                  "magenta", is_discrete)
+                    axes[0, 0].set_title("Real Part")
                     axes[1, 0].set_title("Imag Part")
+                    figs.append(("Real/Imag", fig))
                 else:
                     # Wykres Moduł i Faza
                     SignalVisualizer._plot_common(time_axis, np.abs(samples), axes[0, 0], axes[0, 1], n_bins, "Mod",
-                                                  "purple", is_discrete)
+                                                  "lime", is_discrete)
                     SignalVisualizer._plot_common(time_axis, np.angle(samples), axes[1, 0], axes[1, 1], n_bins, "Phase",
-                                                  "orange", is_discrete)
-                    axes[0, 0].set_title("Modulus (Abs)");
+                                                  "yellow", is_discrete)
+                    axes[0, 0].set_title("Modulus (Abs)")
                     axes[1, 0].set_title("Phase (Angle)")
+                    figs.append(("Mod/Phase", fig))
+                
+                fig.tight_layout(rect=(0, 0.03, 1, 0.95))
 
-        plt.tight_layout(rect=(0, 0.03, 1, 0.95))
-        plt.show()
+        return figs
+
 
 class SignalVisualizerReal:
     @staticmethod
