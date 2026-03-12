@@ -1,110 +1,68 @@
 from SignalGenerator import *
 import matplotlib.pyplot as plt
 
-class SignalVisualizer:
+class WizualizatorSygnalu:
     @staticmethod
-    def _plot_common(time_axis, data, ax_time, ax_hist, n_bins, label, color, is_discrete):
-        # 1. Wykres czasowy
-        if is_discrete:
-            ax_time.scatter(time_axis, data, s=2, color=color)
+    def _rysuj_wspolne(os_czasu, dane, os_czasowa, os_histogramu, liczba_przedzialow, etykieta, kolor, czy_dyskretny):
+        if czy_dyskretny:
+            os_czasowa.scatter(os_czasu, dane, s=2, color=kolor)
         else:
-            ax_time.plot(time_axis, data, color=color, linewidth=1)
-        ax_time.set_ylabel(label)
-        ax_time.grid(True, linestyle='--', color='gray', alpha=0.5)
+            os_czasowa.plot(os_czasu, dane, color=kolor, linewidth=1)
+        os_czasowa.set_ylabel(etykieta)
+        os_czasowa.grid(True, linestyle='--', color='gray', alpha=0.5)
 
-        data_min = np.min(data)
-        data_max = np.max(data)
+        minimum_danych = np.min(dane)
+        maksimum_danych = np.max(dane)
 
-        if np.isclose(data_min, data_max):
-            ax_hist.hist(data, bins=1, color=color, edgecolor='white', alpha=0.7)
-            ax_hist.set_title(f"Histogram (wartość stała: {data_min:.2f})")
+        if np.isclose(minimum_danych, maksimum_danych):
+            os_histogramu.hist(dane, bins=1, color=kolor, edgecolor='white', alpha=0.7)
+            os_histogramu.set_title(f"Histogram (wartość stała: {minimum_danych:.2f})")
         else:
-            ax_hist.hist(data, bins=n_bins, color=color, edgecolor='white', alpha=0.7)
+            os_histogramu.hist(dane, bins=liczba_przedzialow, color=kolor, edgecolor='white', alpha=0.7)
 
-        ax_hist.set_ylabel("Częstość")
+        os_histogramu.set_ylabel("Częstość")
 
     @staticmethod
-    def plot_all(signal_generator, n_samples, n_bins, is_discrete=False, title="Analiza Sygnału"):
+    def rysuj_wszystko(generator_sygnalu, liczba_probek, liczba_przedzialow, czy_dyskretny=False, tytul="Analiza Sygnału"):
         plt.style.use('dark_background')
-        signal_generator.reset()
-        samples = np.array([next(signal_generator) for _ in range(n_samples)])
-        signal_generator.reset()
+        generator_sygnalu.resetuj()
+        probki = np.array([next(generator_sygnalu) for _ in range(liczba_probek)])
+        generator_sygnalu.resetuj()
 
-        time_axis = np.arange(n_samples) / signal_generator.fs
+        os_czasu = np.arange(liczba_probek) / generator_sygnalu.czestotliwosc_probkowania
         
-        figs = []
+        wykresy = []
 
-        if not np.iscomplexobj(samples):
+        if not np.iscomplexobj(probki):
             # --- SYGNAŁ RZECZYWISTY ---
-            fig, (ax_time, ax_hist) = plt.subplots(2, 1, figsize=(10, 8))
-            fig.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
-            fig.suptitle(title)
-            SignalVisualizer._plot_common(time_axis, samples.real, ax_time, ax_hist, n_bins, "Amplituda", "cyan",
-                                          is_discrete)
-            ax_time.set_title("Przebieg czasowy")
-            ax_hist.set_title("Histogram")
-            fig.tight_layout(rect=(0, 0.03, 1, 0.95))
-            figs.append(("Sygnał Rzeczywisty", fig))
+            wykres, (os_czasowa, os_histogramu) = plt.subplots(2, 1, figsize=(10, 8))
+            wykres.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
+            wykres.suptitle(tytul)
+            WizualizatorSygnalu._rysuj_wspolne(os_czasu, probki.real, os_czasowa, os_histogramu, liczba_przedzialow, "Amplituda", "cyan", czy_dyskretny)
+            os_czasowa.set_title("Przebieg czasowy")
+            os_histogramu.set_title("Histogram")
+            wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+            wykresy.append(("Sygnał Rzeczywisty", wykres))
         else:
             # --- SYGNAŁ ZESPOLONY ---
-            for plot_type in ['re_im', 'mod_ph']:
-                fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-                fig.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
-                fig.suptitle(f"{title} - {plot_type.upper()}")
+            for typ_wykresu in ['rzecz_uroj', 'modul_faza']:
+                wykres, osie = plt.subplots(2, 2, figsize=(12, 10))
+                wykres.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
+                wykres.suptitle(f"{tytul} - {typ_wykresu.upper()}")
 
-                if plot_type == 're_im':
-                    # Wykres Re i Im
-                    SignalVisualizer._plot_common(time_axis, samples.real, axes[0, 0], axes[0, 1], n_bins, "Real",
-                                                  "cyan", is_discrete)
-                    SignalVisualizer._plot_common(time_axis, samples.imag, axes[1, 0], axes[1, 1], n_bins, "Imag",
-                                                  "magenta", is_discrete)
-                    axes[0, 0].set_title("Real Part")
-                    axes[1, 0].set_title("Imag Part")
-                    figs.append(("Real/Imag", fig))
+                if typ_wykresu == 'rzecz_uroj':
+                    WizualizatorSygnalu._rysuj_wspolne(os_czasu, probki.real, osie[0, 0], osie[0, 1], liczba_przedzialow, "Część Rzeczywista", "cyan", czy_dyskretny)
+                    WizualizatorSygnalu._rysuj_wspolne(os_czasu, probki.imag, osie[1, 0], osie[1, 1], liczba_przedzialow, "Część Urojona", "magenta", czy_dyskretny)
+                    osie[0, 0].set_title("Część Rzeczywista (Real)")
+                    osie[1, 0].set_title("Część Urojona (Imag)")
+                    wykresy.append(("Rzeczywista/Urojona", wykres))
                 else:
-                    # Wykres Moduł i Faza
-                    SignalVisualizer._plot_common(time_axis, np.abs(samples), axes[0, 0], axes[0, 1], n_bins, "Mod",
-                                                  "lime", is_discrete)
-                    SignalVisualizer._plot_common(time_axis, np.angle(samples), axes[1, 0], axes[1, 1], n_bins, "Phase",
-                                                  "yellow", is_discrete)
-                    axes[0, 0].set_title("Modulus (Abs)")
-                    axes[1, 0].set_title("Phase (Angle)")
-                    figs.append(("Mod/Phase", fig))
+                    WizualizatorSygnalu._rysuj_wspolne(os_czasu, np.abs(probki), osie[0, 0], osie[0, 1], liczba_przedzialow, "Moduł", "lime", czy_dyskretny)
+                    WizualizatorSygnalu._rysuj_wspolne(os_czasu, np.angle(probki), osie[1, 0], osie[1, 1], liczba_przedzialow, "Faza", "yellow", czy_dyskretny)
+                    osie[0, 0].set_title("Moduł (Abs)")
+                    osie[1, 0].set_title("Faza (Angle)")
+                    wykresy.append(("Moduł/Faza", wykres))
                 
-                fig.tight_layout(rect=(0, 0.03, 1, 0.95))
+                wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
 
-        return figs
-
-
-class SignalVisualizerReal:
-    @staticmethod
-    def plot_all(signal_generator, n_samples, n_bins, is_discrete = False, title="Analiza Sygnału"):
-        samples = [next(signal_generator) for _ in range(n_samples)]
-
-        fs = getattr(signal_generator, 'fs', 1000.0)
-        time_axis = np.arange(n_samples) / fs
-
-        fig, (ax_time, ax_hist) = plt.subplots(2, 1, figsize=(10, 8))
-        fig.suptitle(title, fontsize=16)
-
-        # --- WYKRES CZASOWY ---
-        if is_discrete:
-            ax_time.scatter(time_axis, samples, s=2)
-        else:
-            ax_time.plot(time_axis, samples, color='blue', linewidth=1)
-        ax_time.set_title("Przebieg czasowy sygnału")
-        ax_time.set_xlabel("Czas [s]")
-        ax_time.set_ylabel("Amplituda")
-        ax_time.grid(True, linestyle='--', alpha=0.7)
-
-        # --- HISTOGRAM ---
-        # Histogram ma mieć możliwość ustawienia liczby przedziałów
-        # na wartości 5, 10, 15 i 20, lub płynnie w zakresie zawierającym te wartości
-        ax_hist.hist(samples, bins=n_bins, color='green', edgecolor='black', alpha=0.7)
-        ax_hist.set_title("Histogram (Rozkład amplitud)")
-        ax_hist.set_xlabel("Wartość amplitudy")
-        ax_hist.set_ylabel("Częstość występowania")
-        ax_hist.grid(True, axis='y', linestyle='--', alpha=0.7)
-
-        plt.tight_layout(rect=(0, 0.03, 1, 0.95))
-        plt.show()
+        return wykresy

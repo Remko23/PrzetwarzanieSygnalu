@@ -1,35 +1,24 @@
-# Generacja sygnału i szumu
-
-import numpy as np
-import json
-
-from SignalGenerator import *
-from SignalFile import *
-from SignalVisualizer import *
-
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-from SignalGenerator import SignalGenerator
-from SignalFile import SignalFile
-from SignalVisualizer import SignalVisualizer
+from SignalGenerator import GeneratorSygnalu
+from SignalFile import PlikSygnalu
+from SignalVisualizer import WizualizatorSygnalu
 
-
-class SignalApp(tk.Tk):
+class AplikacjaSygnalowa(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Generator i Analizator Sygnałów")
         self.geometry("1800x800")
 
-        self.apply_dark_theme()
+        self.zastosuj_ciemny_motyw()
 
-        self.signal1 = None
-        self.is_discrete = False
+        self.sygnal_glowny = None
+        self.czy_dyskretny = False
         
-        # Słownik z nazwami sygnałów
-        self.signal_types = {
+        self.typy_sygnalow = {
             "s1": "Szum o rozkładzie jednostajnym (s1)",
             "s2": "Szum gaussowski (s2)",
             "s3": "Sygnał sinusoidalny (s3)",
@@ -44,361 +33,335 @@ class SignalApp(tk.Tk):
             "s12": "Testowy sygnał zespolony (s12)"
         }
         
-        # Odwrotne mapowanie (Nazwa -> Kod)
-        self.signal_codes = {v: k for k, v in self.signal_types.items()}
+        self.kody_sygnalow = {v: k for k, v in self.typy_sygnalow.items()}
 
-        self.create_widgets()
+        self.utworz_widzety()
 
-    def apply_dark_theme(self):
-        # Konfiguracja tła standardowego okna
+    def zastosuj_ciemny_motyw(self):
         self.configure(bg="#2b2b2b")
         
-        style = ttk.Style(self)
+        styl = ttk.Style(self)
         try:
-            # W miarę możliwości startujemy z clam, który dobrze się poddaje stylowaniu
-            style.theme_use("clam")
+            styl.theme_use("clam")
         except:
             pass
 
-        # Główne kolory
-        bg_col = "#2b2b2b"
-        fg_col = "#e0e0e0"
-        btn_bg = "#3c3f41"
-        btn_active = "#4b4e50"
-        entry_bg = "#3c3f41"
-        entry_fg = "#ffffff"
+        kolor_tla = "#2b2b2b"
+        kolor_tekstu = "#e0e0e0"
+        tlo_przycisku = "#3c3f41"
+        aktywny_przycisk = "#4b4e50"
+        tlo_pola_tekstowego = "#3c3f41"
+        tekst_pola_tekstowego = "#ffffff"
 
-        # Tła ramek i etykiet
-        style.configure("TFrame", background=bg_col)
-        style.configure("TLabel", background=bg_col, foreground=fg_col)
-        style.configure("TLabelframe", background=bg_col, foreground=fg_col)
-        style.configure("TLabelframe.Label", background=bg_col, foreground=fg_col, font=("Arial", 10, "bold"))
+        styl.configure("TFrame", background=kolor_tla)
+        styl.configure("TLabel", background=kolor_tla, foreground=kolor_tekstu)
+        styl.configure("TLabelframe", background=kolor_tla, foreground=kolor_tekstu)
+        styl.configure("TLabelframe.Label", background=kolor_tla, foreground=kolor_tekstu, font=("Arial", 10, "bold"))
 
-        # Przycisk (Button)
-        style.configure("TButton", 
-                        background=btn_bg, foreground=fg_col, 
+        styl.configure("TButton", 
+                        background=tlo_przycisku, foreground=kolor_tekstu, 
                         borderwidth=1, focusthickness=3, focuscolor='none')
-        style.map("TButton",
-                  background=[("active", btn_active), ("pressed", "#5a5d5f")])
+        styl.map("TButton",
+                  background=[("active", aktywny_przycisk), ("pressed", "#5a5d5f")])
 
-        # Pola wyboru i wejścia textowego
-        style.configure("TCombobox", 
-                        fieldbackground=entry_bg, background=btn_bg, foreground=entry_fg, 
-                        arrowcolor=fg_col)
-        style.configure("TEntry", fieldbackground=entry_bg, foreground=entry_fg)
+        styl.configure("TCombobox", 
+                        fieldbackground=tlo_pola_tekstowego, background=tlo_przycisku, foreground=tekst_pola_tekstowego, 
+                        arrowcolor=kolor_tekstu)
+        styl.configure("TEntry", fieldbackground=tlo_pola_tekstowego, foreground=tekst_pola_tekstowego)
 
-        # PanedWindow & Notebook
-        style.configure("TPanedwindow", background=bg_col)
-        style.configure("TNotebook", background=bg_col, borderwidth=0)
-        style.configure("TNotebook.Tab", background=btn_bg, foreground=fg_col, padding=[5, 2])
-        style.map("TNotebook.Tab",
+        styl.configure("TPanedwindow", background=kolor_tla)
+        styl.configure("TNotebook", background=kolor_tla, borderwidth=0)
+        styl.configure("TNotebook.Tab", background=tlo_przycisku, foreground=kolor_tekstu, padding=[5, 2])
+        styl.map("TNotebook.Tab",
                   background=[("selected", "#505050")], 
                   expand=[("selected", [1, 1, 1, 0])])
 
-    def create_widgets(self):
-        paned_window = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
-        paned_window.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    def utworz_widzety(self):
+        panel_podzielony = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
+        panel_podzielony.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        left_frame = ttk.Frame(paned_window)
-        paned_window.add(left_frame, weight=1)
+        lewa_ramka = ttk.Frame(panel_podzielony)
+        panel_podzielony.add(lewa_ramka, weight=1)
 
-        right_frame = ttk.Frame(paned_window)
-        paned_window.add(right_frame, weight=6)
+        prawa_ramka = ttk.Frame(panel_podzielony)
+        panel_podzielony.add(prawa_ramka, weight=6)
         
-        # Notebook na wykresy po prawej
-        self.viz_notebook = ttk.Notebook(right_frame)
-        self.viz_notebook.pack(fill=tk.BOTH, expand=True)
+        self.notatnik_wizualizacji = ttk.Notebook(prawa_ramka)
+        self.notatnik_wizualizacji.pack(fill=tk.BOTH, expand=True)
 
-        # --- SEKCJA: GENERACJA SYGNAŁU GŁÓWNEGO ---
-        lf_gen1 = ttk.LabelFrame(left_frame, text="1. Generacja Sygnału Głównego", padding="10")
-        lf_gen1.pack(fill=tk.X, pady=5)
+        ramka_generacji_1 = ttk.LabelFrame(lewa_ramka, text="1. Generacja Sygnału Głównego", padding="10")
+        ramka_generacji_1.pack(fill=tk.X, pady=5)
 
-        ttk.Label(lf_gen1, text="Wybierz sygnał:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.combo_sig1 = ttk.Combobox(lf_gen1, values=list(self.signal_types.values()), state="readonly", width=38)
-        self.combo_sig1.grid(row=0, column=1, sticky=tk.W, pady=5)
-        self.combo_sig1.bind("<<ComboboxSelected>>", self.on_sig1_selected)
+        ttk.Label(ramka_generacji_1, text="Wybierz sygnał:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.wybor_sygnalu_1 = ttk.Combobox(ramka_generacji_1, values=list(self.typy_sygnalow.values()), state="readonly", width=38)
+        self.wybor_sygnalu_1.grid(row=0, column=1, sticky=tk.W, pady=5)
+        self.wybor_sygnalu_1.bind("<<ComboboxSelected>>", self.przy_wyborze_sygnalu_1)
 
-        # Ramka na parametry dla wybranego sygnału
-        self.frame_params1 = ttk.Frame(lf_gen1)
-        self.frame_params1.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=5)
-        self.param_entries1 = {}
+        self.ramka_parametrow_1 = ttk.Frame(ramka_generacji_1)
+        self.ramka_parametrow_1.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=5)
+        self.pola_parametrow_1 = {}
 
-        self.btn_gen1 = ttk.Button(lf_gen1, text="Generuj Sygnał Głównego", command=self.generate_signal1)
-        self.btn_gen1.grid(row=2, column=0, columnspan=2, pady=10)
+        self.przycisk_generacji_1 = ttk.Button(ramka_generacji_1, text="Generuj Sygnał Główny", command=self.generuj_sygnal_glowny)
+        self.przycisk_generacji_1.grid(row=2, column=0, columnspan=2, pady=10)
 
-        # --- SEKCJA: OPERACJE MATEMATYCZNE ---
-        lf_op = ttk.LabelFrame(left_frame, text="2. Operacje Matematyczne (Opcjonalne)", padding="10")
-        lf_op.pack(fill=tk.X, pady=5)
+        ramka_operacji = ttk.LabelFrame(lewa_ramka, text="2. Operacje Matematyczne (Opcjonalne)", padding="10")
+        ramka_operacji.pack(fill=tk.X, pady=5)
 
-        ttk.Label(lf_op, text="Wybierz operację:").grid(row=0, column=0, sticky=tk.W, pady=5)
-        self.combo_op = ttk.Combobox(lf_op, values=["Dodawanie (add)", "Odejmowanie (sub)", "Mnożenie (mul)", "Dzielenie (div)"], state="readonly", width=20)
-        self.combo_op.grid(row=0, column=1, sticky=tk.W, pady=5)
+        ttk.Label(ramka_operacji, text="Wybierz operację:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.wybor_operacji = ttk.Combobox(ramka_operacji, values=["Dodawanie", "Odejmowanie", "Mnożenie", "Dzielenie"], state="readonly", width=20)
+        self.wybor_operacji.grid(row=0, column=1, sticky=tk.W, pady=5)
 
-        ttk.Label(lf_op, text="Wybierz sygnał 2:").grid(row=1, column=0, sticky=tk.W, pady=5)
-        self.combo_sig2 = ttk.Combobox(lf_op, values=list(self.signal_types.values()), state="readonly", width=38)
-        self.combo_sig2.grid(row=1, column=1, sticky=tk.W, pady=5)
-        self.combo_sig2.bind("<<ComboboxSelected>>", self.on_sig2_selected)
+        ttk.Label(ramka_operacji, text="Wybierz sygnał 2:").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.wybor_sygnalu_2 = ttk.Combobox(ramka_operacji, values=list(self.typy_sygnalow.values()), state="readonly", width=38)
+        self.wybor_sygnalu_2.grid(row=1, column=1, sticky=tk.W, pady=5)
+        self.wybor_sygnalu_2.bind("<<ComboboxSelected>>", self.przy_wyborze_sygnalu_2)
 
-        # Ramka na parametry dla drugiego sygnału
-        self.frame_params2 = ttk.Frame(lf_op)
-        self.frame_params2.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=5)
-        self.param_entries2 = {}
+        self.ramka_parametrow_2 = ttk.Frame(ramka_operacji)
+        self.ramka_parametrow_2.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=5)
+        self.pola_parametrow_2 = {}
 
-        self.btn_op = ttk.Button(lf_op, text="Wykonaj Operację na Głównym Sygnale", command=self.execute_operation)
-        self.btn_op.grid(row=3, column=0, columnspan=2, pady=10)
+        self.przycisk_operacji = ttk.Button(ramka_operacji, text="Wykonaj Operację na Głównym Sygnale", command=self.wykonaj_operacje)
+        self.przycisk_operacji.grid(row=3, column=0, columnspan=2, pady=10)
 
-        # --- SEKCJA: AKCJE I WIZUALIZACJA ---
-        lf_actions = ttk.LabelFrame(left_frame, text="3. Akcje na Głównym Sygnale", padding="10")
-        lf_actions.pack(fill=tk.BOTH, expand=True, pady=5)
+        ramka_akcji = ttk.LabelFrame(lewa_ramka, text="3. Akcje na Głównym Sygnale", padding="10")
+        ramka_akcji.pack(fill=tk.BOTH, expand=True, pady=5)
 
-        # Przyciski akcji
-        action_btns_frame = ttk.Frame(lf_actions)
-        action_btns_frame.pack(fill=tk.X, pady=5)
+        ramka_przyciskow_akcji = ttk.Frame(ramka_akcji)
+        ramka_przyciskow_akcji.pack(fill=tk.X, pady=5)
 
-        ttk.Button(action_btns_frame, text="Zapisz do pliku", command=self.save_signal).pack(side=tk.LEFT, padx=5)
-        ttk.Button(action_btns_frame, text="Wczytaj z pliku", command=self.load_signal).pack(side=tk.LEFT, padx=5)
+        ttk.Button(ramka_przyciskow_akcji, text="Zapisz do pliku", command=self.zapisz_sygnal).pack(side=tk.LEFT, padx=5)
+        ttk.Button(ramka_przyciskow_akcji, text="Wczytaj z pliku", command=self.wczytaj_sygnal).pack(side=tk.LEFT, padx=5)
 
-        # Parametry globalne (wizualizacja/zapis)
-        global_params_frame = ttk.Frame(lf_actions)
-        global_params_frame.pack(fill=tk.X, pady=5)
+        ramka_parametrow_globalnych = ttk.Frame(ramka_akcji)
+        ramka_parametrow_globalnych.pack(fill=tk.X, pady=5)
         
-        ttk.Label(global_params_frame, text="Liczba próbek w oknie (n_samples):").grid(row=0, column=0, sticky=tk.W, padx=5)
-        self.entry_samples = ttk.Entry(global_params_frame, width=10)
-        self.entry_samples.insert(0, "1000")
-        self.entry_samples.grid(row=0, column=1, sticky=tk.W, padx=5)
+        ttk.Label(ramka_parametrow_globalnych, text="Liczba próbek w oknie:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        self.pole_liczba_probek = ttk.Entry(ramka_parametrow_globalnych, width=10)
+        self.pole_liczba_probek.insert(0, "1000")
+        self.pole_liczba_probek.grid(row=0, column=1, sticky=tk.W, padx=5)
 
-        ttk.Label(global_params_frame, text="Przedziały histogramu (n_bins):").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        self.entry_bins = ttk.Entry(global_params_frame, width=10)
-        self.entry_bins.insert(0, "20")
-        self.entry_bins.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(ramka_parametrow_globalnych, text="Przedziały histogramu:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.pole_liczba_przedzialow = ttk.Entry(ramka_parametrow_globalnych, width=10)
+        self.pole_liczba_przedzialow.insert(0, "20")
+        self.pole_liczba_przedzialow.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
-        ttk.Button(global_params_frame, text="Wizualizuj (Wykres + Histogram)", command=self.visualize_signal).grid(row=2, column=0, columnspan=2, pady=10)
+        ttk.Button(ramka_parametrow_globalnych, text="Wizualizuj (Wykres + Histogram)", command=self.wizualizuj_sygnal).grid(row=2, column=0, columnspan=2, pady=10)
 
-        # Obszar tekstowy na logi i statystyki. Tu sterujemy kolorami z obiektu bazowego tk (Text nie jest użyteczne via ttk)
-        self.txt_output = tk.Text(lf_actions, height=15, state=tk.DISABLED, bg="#3c3f41", fg="#e0e0e0", insertbackground="#ffffff")
-        self.txt_output.pack(fill=tk.BOTH, expand=True, pady=5)
+        self.pole_tekstowe_logow = tk.Text(ramka_akcji, height=15, state=tk.DISABLED, bg="#3c3f41", fg="#e0e0e0", insertbackground="#ffffff")
+        self.pole_tekstowe_logow.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        ttk.Button(lf_actions, text="Oblicz i Wyświetl Statystyki", command=self.show_statistics).pack(pady=5)
+        ttk.Button(ramka_akcji, text="Oblicz i Wyświetl Statystyki", command=self.pokaz_statystyki).pack(pady=5)
 
-    def log_message(self, message):
-        self.txt_output.config(state=tk.NORMAL)
-        self.txt_output.insert(tk.END, message + "\n")
-        self.txt_output.see(tk.END)
-        self.txt_output.config(state=tk.DISABLED)
+    def loguj_wiadomosc(self, wiadomosc):
+        self.pole_tekstowe_logow.config(state=tk.NORMAL)
+        self.pole_tekstowe_logow.insert(tk.END, wiadomosc + "\n")
+        self.pole_tekstowe_logow.see(tk.END)
+        self.pole_tekstowe_logow.config(state=tk.DISABLED)
 
-    def _build_params_ui(self, parent_frame, param_dict, signal_code):
-        # Czyścimy starą zawartość
-        for widget in parent_frame.winfo_children():
-            widget.destroy()
-        param_dict.clear()
+    def _zbuduj_interfejs_parametrow(self, ramka_rodzica, slownik_parametrow, kod_sygnalu):
+        for widzet in ramka_rodzica.winfo_children():
+            widzet.destroy()
+        slownik_parametrow.clear()
 
-        if not signal_code: return
+        if not kod_sygnalu: return
 
-        # Definicja parametrów wymaganych dla danego sygnału
-        required_params = [('A', 'Amplituda', '1.0')]
+        wymagane_parametry = [('amplituda', 'Amplituda', '1.0')]
         
-        if signal_code not in ["s10", "s11"]:
-            required_params.extend([
-                ('t1', 'Czas początkowy (t1)', '0.0'),
-                ('d', 'Czas trwania (d)', '1.0')
+        if kod_sygnalu not in ["s10", "s11"]:
+            wymagane_parametry.extend([
+                ('czas_poczatkowy', 'Czas początkowy', '0.0'),
+                ('czas_trwania', 'Czas trwania', '1.0')
             ])
-            if signal_code in ["s3", "s4", "s5", "s6", "s7", "s8", "s12"]:
-                required_params.append(('T', 'Okres (T)', '1.0'))
-            if signal_code in ["s6", "s7", "s8"]:
-                required_params.append(('kw', 'Wsp. wypełnienia (kw)', '0.5'))
-            if signal_code == "s9":
-                required_params.append(('ts', 'Czas skoku (ts)', '0.5'))
+            if kod_sygnalu in ["s3", "s4", "s5", "s6", "s7", "s8", "s12"]:
+                wymagane_parametry.append(('okres', 'Okres', '1.0'))
+            if kod_sygnalu in ["s6", "s7", "s8"]:
+                wymagane_parametry.append(('wspolczynnik_wypelnienia', 'Wsp. wypełnienia', '0.5'))
+            if kod_sygnalu == "s9":
+                wymagane_parametry.append(('czas_skoku', 'Czas skoku', '0.5'))
         else:
-            if signal_code == "s10":
-                required_params.append(('ns', 'Próbka skoku (ns)', '100'))
-            if signal_code == "s11":
-                required_params.append(('p', 'Prawd. skoku (p)', '0.1'))
+            if kod_sygnalu == "s10":
+                wymagane_parametry.append(('numer_probki_skoku', 'Numer próbki skoku', '100'))
+            if kod_sygnalu == "s11":
+                wymagane_parametry.append(('prawdopodobienstwo', 'Prawd. skoku', '0.1'))
 
-        for i, (p_key, p_label, default_val) in enumerate(required_params):
-            ttk.Label(parent_frame, text=p_label+":").grid(row=i//4, column=(i%4)*2, padx=2, pady=2, sticky=tk.E)
-            entry = ttk.Entry(parent_frame, width=8)
-            entry.insert(0, default_val)
-            entry.grid(row=i//4, column=(i%4)*2+1, padx=2, pady=2, sticky=tk.W)
-            param_dict[p_key] = entry
+        for i, (klucz_parametru, etykieta_parametru, wartosc_domyslna) in enumerate(wymagane_parametry):
+            ttk.Label(ramka_rodzica, text=etykieta_parametru+":").grid(row=i//4, column=(i%4)*2, padx=2, pady=2, sticky=tk.E)
+            pole_wprowadzania = ttk.Entry(ramka_rodzica, width=8)
+            pole_wprowadzania.insert(0, wartosc_domyslna)
+            pole_wprowadzania.grid(row=i//4, column=(i%4)*2+1, padx=2, pady=2, sticky=tk.W)
+            slownik_parametrow[klucz_parametru] = pole_wprowadzania
 
-    def on_sig1_selected(self, event):
-        sig_name = self.combo_sig1.get()
-        sig_code = self.signal_codes.get(sig_name)
-        self._build_params_ui(self.frame_params1, self.param_entries1, sig_code)
+    def przy_wyborze_sygnalu_1(self, zdarzenie):
+        nazwa_sygnalu = self.wybor_sygnalu_1.get()
+        kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
+        self._zbuduj_interfejs_parametrow(self.ramka_parametrow_1, self.pola_parametrow_1, kod_sygnalu)
 
-    def on_sig2_selected(self, event):
-        sig_name = self.combo_sig2.get()
-        sig_code = self.signal_codes.get(sig_name)
-        self._build_params_ui(self.frame_params2, self.param_entries2, sig_code)
+    def przy_wyborze_sygnalu_2(self, zdarzenie):
+        nazwa_sygnalu = self.wybor_sygnalu_2.get()
+        kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
+        self._zbuduj_interfejs_parametrow(self.ramka_parametrow_2, self.pola_parametrow_2, kod_sygnalu)
 
-    def _get_parsed_params(self, param_dict):
-        parsed = {}
-        for key, entry in param_dict.items():
-            val_str = entry.get()
+    def _pobierz_przetworzone_parametry(self, slownik_parametrow):
+        przetworzone = {}
+        for klucz, pole_wprowadzania in slownik_parametrow.items():
+            wartosc_tekstowa = pole_wprowadzania.get()
             try:
-                # Ograniczenie - ns jest intem
-                if key == 'ns':
-                    parsed[key] = int(val_str)
+                if klucz == 'numer_probki_skoku':
+                    przetworzone[klucz] = int(wartosc_tekstowa)
                 else:
-                    parsed[key] = float(val_str)
+                    przetworzone[klucz] = float(wartosc_tekstowa)
             except ValueError:
-                raise ValueError(f"Nieprawidłowa wartość dla parametru '{key}': {val_str}")
-        return parsed
+                raise ValueError(f"Nieprawidłowa wartość dla parametru '{klucz}': {wartosc_tekstowa}")
+        return przetworzone
 
-    def generate_signal1(self):
-        sig_name = self.combo_sig1.get()
-        if not sig_name:
+    def generuj_sygnal_glowny(self):
+        nazwa_sygnalu = self.wybor_sygnalu_1.get()
+        if not nazwa_sygnalu:
             messagebox.showwarning("Uwaga", "Wybierz typ sygnału głównego!")
             return
 
-        sig_code = self.signal_codes[sig_name]
+        kod_sygnalu = self.kody_sygnalow[nazwa_sygnalu]
         try:
-            params = self._get_parsed_params(self.param_entries1)
-            self.signal1 = SignalGenerator(signal_source=sig_code, **params)
-            self.is_discrete = sig_code in ["s10", "s11"]
-            self.log_message(f"Wygenerowano sygnał główny: {sig_name} z parametrami {params}")
+            parametry = self._pobierz_przetworzone_parametry(self.pola_parametrow_1)
+            self.sygnal_glowny = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu, **parametry)
+            self.czy_dyskretny = kod_sygnalu in ["s10", "s11"]
+            self.loguj_wiadomosc(f"Wygenerowano sygnał główny: {nazwa_sygnalu} z parametrami {parametry}")
             messagebox.showinfo("Sukces", "Sygnał główny został utworzony.")
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
 
-    def execute_operation(self):
-        if not self.signal1:
+    def wykonaj_operacje(self):
+        if not self.sygnal_glowny:
             messagebox.showerror("Błąd", "Najpierw wygeneruj sygnał główny!")
             return
 
-        op_str = self.combo_op.get()
-        sig2_name = self.combo_sig2.get()
+        operacja_tekst = self.wybor_operacji.get()
+        nazwa_sygnalu_2 = self.wybor_sygnalu_2.get()
 
-        if not op_str or not sig2_name:
+        if not operacja_tekst or not nazwa_sygnalu_2:
             messagebox.showwarning("Uwaga", "Wybierz operację oraz drugi sygnał!")
             return
 
-        sig2_code = self.signal_codes[sig2_name]
+        kod_sygnalu_2 = self.kody_sygnalow[nazwa_sygnalu_2]
         try:
-            params2 = self._get_parsed_params(self.param_entries2)
-            signal2 = SignalGenerator(signal_source=sig2_code, **params2)
+            parametry_2 = self._pobierz_przetworzone_parametry(self.pola_parametrow_2)
+            sygnal_2 = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu_2, **parametry_2)
 
-            if "add" in op_str:
-                self.signal1 = self.signal1 + signal2
-            elif "sub" in op_str:
-                self.signal1 = self.signal1 - signal2
-            elif "mul" in op_str:
-                self.signal1 = self.signal1 * signal2
-            elif "div" in op_str:
-                self.signal1 = self.signal1 / signal2
+            if operacja_tekst == "Dodawanie":
+                self.sygnal_glowny = self.sygnal_glowny.dodaj_sygnal(sygnal_2)
+            elif operacja_tekst == "Odejmowanie":
+                self.sygnal_glowny = self.sygnal_glowny.odejmij_sygnal(sygnal_2)
+            elif operacja_tekst == "Mnożenie":
+                self.sygnal_glowny = self.sygnal_glowny.pomnoz_sygnal(sygnal_2)
+            elif operacja_tekst == "Dzielenie":
+                self.sygnal_glowny = self.sygnal_glowny.podziel_sygnal(sygnal_2)
 
-            # Jeżeli operacja dotyczy sygnałów dyskretnych
-            self.is_discrete = self.is_discrete or (sig2_code in ["s10", "s11"])
+            self.czy_dyskretny = self.czy_dyskretny or (kod_sygnalu_2 in ["s10", "s11"])
 
-            self.log_message(f"Wykonano operację '{op_str}' z sygnałem {sig2_name}.")
+            self.loguj_wiadomosc(f"Wykonano operację '{operacja_tekst}' z sygnałem {nazwa_sygnalu_2}.")
             messagebox.showinfo("Sukces", "Zaktualizowano sygnał główny operatorem.")
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
 
-    def save_signal(self):
-        if not self.signal1:
+    def zapisz_sygnal(self):
+        if not self.sygnal_glowny:
             messagebox.showerror("Błąd", "Brak wygenerowanego sygnału do zapisu!")
             return
         
         try:
-            n_samples = int(self.entry_samples.get())
+            liczba_probek = int(self.pole_liczba_probek.get())
         except ValueError:
-            messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek (n_samples).")
+            messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek.")
             return
 
-        fname = filedialog.asksaveasfilename(defaultextension=".bin", filetypes=[("Pliki Binarne", "*.bin"), ("Wszystkie pliki", "*.*")])
-        if fname:
+        nazwa_pliku = filedialog.asksaveasfilename(defaultextension=".bin", filetypes=[("Pliki Binarne", "*.bin"), ("Wszystkie pliki", "*.*")])
+        if nazwa_pliku:
             try:
-                SignalFile.save_to_binary(fname, self.signal1, n_samples)
-                self.log_message(f"Zapisano sygnał do pliku: {fname} (N={n_samples})")
-                messagebox.showinfo("Sukces", f"Zapisano pomyślnie do {fname}")
+                PlikSygnalu.zapisz_do_binarnego(nazwa_pliku, self.sygnal_glowny, liczba_probek)
+                self.loguj_wiadomosc(f"Zapisano sygnał do pliku: {nazwa_pliku} (N={liczba_probek})")
+                messagebox.showinfo("Sukces", f"Zapisano pomyślnie do {nazwa_pliku}")
             except Exception as e:
                 messagebox.showerror("Błąd", str(e))
 
-    def load_signal(self):
-        fname = filedialog.askopenfilename(filetypes=[("Pliki Binarne", "*.bin"), ("Wszystkie pliki", "*.*")])
-        if fname:
+    def wczytaj_sygnal(self):
+        nazwa_pliku = filedialog.askopenfilename(filetypes=[("Pliki Binarne", "*.bin"), ("Wszystkie pliki", "*.*")])
+        if nazwa_pliku:
             try:
-                loaded_sig = SignalFile.load_from_binary(fname)
-                if loaded_sig:
-                    self.signal1 = loaded_sig
-                    self.log_message(f"Wczytano sygnał z pliku: {fname}")
-                    # Wywołuje logowanie nagłówka też na UI
-                    self.log_message(f"(Zobacz konsolę / odczytywanie binarne)")
-                    SignalFile.print_text_info(fname)
+                wczytany_sygnal = PlikSygnalu.wczytaj_z_binarnego(nazwa_pliku)
+                if wczytany_sygnal:
+                    self.sygnal_glowny = wczytany_sygnal
+                    self.loguj_wiadomosc(f"Wczytano sygnał z pliku: {nazwa_pliku}")
+                    self.loguj_wiadomosc(f"(Zobacz konsolę / odczytywanie binarne)")
+                    PlikSygnalu.wyswietl_informacje_tekstowe(nazwa_pliku)
                     messagebox.showinfo("Sukces", "Sygnał został pomyślnie wczytany.")
                 else:
                     messagebox.showerror("Błąd", "Plik błęny lub pusty.")
             except Exception as e:
                 messagebox.showerror("Błąd", str(e))
 
-    def visualize_signal(self):
-        if not self.signal1:
+    def wizualizuj_sygnal(self):
+        if not self.sygnal_glowny:
             messagebox.showerror("Błąd", "Najpierw wygeneruj lub wczytaj sygnał główny!")
             return
         
         try:
-            samples = int(self.entry_samples.get())
-            bins = int(self.entry_bins.get())
+            liczba_probek = int(self.pole_liczba_probek.get())
+            liczba_przedzialow = int(self.pole_liczba_przedzialow.get())
         except ValueError:
-            messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek lub binów.")
+            messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek lub przedziałów.")
             return
 
         try:
-            # Czyszczenie starych zakładek
-            for tab in self.viz_notebook.tabs():
-                self.viz_notebook.forget(tab)
+            for zakladka in self.notatnik_wizualizacji.tabs():
+                self.notatnik_wizualizacji.forget(zakladka)
 
-            # Pobranie objętków wykresów Figure z SignalVisualizer
-            figs = SignalVisualizer.plot_all(self.signal1, n_samples=samples, n_bins=bins, is_discrete=self.is_discrete)
-            self.signal1.reset()
+            wykresy = WizualizatorSygnalu.rysuj_wszystko(self.sygnal_glowny, liczba_probek=liczba_probek, liczba_przedzialow=liczba_przedzialow, czy_dyskretny=self.czy_dyskretny)
+            self.sygnal_glowny.resetuj()
 
-            for title, fig in figs:
-                frame = ttk.Frame(self.viz_notebook)
-                self.viz_notebook.add(frame, text=title)
+            for tytul, wykres in wykresy:
+                ramka = ttk.Frame(self.notatnik_wizualizacji)
+                self.notatnik_wizualizacji.add(ramka, text=tytul)
 
-                canvas = FigureCanvasTkAgg(fig, master=frame)
-                canvas.draw()
-                canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                plotno = FigureCanvasTkAgg(wykres, master=ramka)
+                plotno.draw()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-                toolbar = NavigationToolbar2Tk(canvas, frame)
-                toolbar.update()
-                canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka)
+                pasek_narzedzi.update()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-            self.log_message(f"Wyświetlono wizualizację na {samples} próbkach i {bins} przedziałach.")
+            self.loguj_wiadomosc(f"Wyświetlono wizualizację na {liczba_probek} próbkach i {liczba_przedzialow} przedziałach.")
         except Exception as e:
             messagebox.showerror("Błąd wizualizacji", str(e))
 
-    def show_statistics(self):
-        if not self.signal1:
+    def pokaz_statystyki(self):
+        if not self.sygnal_glowny:
             messagebox.showerror("Błąd", "Najpierw wygeneruj lub wczytaj sygnał główny!")
             return
 
         try:
-            samples = int(self.entry_samples.get())
+            liczba_probek = int(self.pole_liczba_probek.get())
         except ValueError:
             messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek.")
             return
 
         try:
-            stats = self.signal1.get_stats(n_samples=samples)
-            if not stats:
-                self.log_message("Sygnał jest pusty lub niemożliwy do przeanalizowania.")
+            statystyki = self.sygnal_glowny.pobierz_statystyki(liczba_probek=liczba_probek)
+            if not statystyki:
+                self.loguj_wiadomosc("Sygnał jest pusty lub niemożliwy do przeanalizowania.")
                 return
 
-            self.log_message(f"--- Statystyki sygnału ({samples} próbek) ---")
-            for k, v in stats.items():
-                if isinstance(v, (complex, np.complex128)):
-                    val_str = f"{v.real:.4f} + {v.imag:.4f}j"
+            self.loguj_wiadomosc(f"--- Statystyki sygnału ({liczba_probek} próbek) ---")
+            for nazwa, wartosc in statystyki.items():
+                if isinstance(wartosc, (complex, np.complex128)):
+                    wartosc_tekstowa = f"{wartosc.real:.4f} + {wartosc.imag:.4f}j"
                 else:
-                    val_str = f"{v:.4f}"
-                self.log_message(f" {k:<15}: {val_str}")
-            self.log_message("-" * 35)
+                    wartosc_tekstowa = f"{wartosc:.4f}"
+                self.loguj_wiadomosc(f" {nazwa:<25}: {wartosc_tekstowa}")
+            self.loguj_wiadomosc("-" * 35)
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
 
-
 if __name__ == "__main__":
-    app = SignalApp()
-    app.mainloop()
-
+    aplikacja = AplikacjaSygnalowa()
+    aplikacja.mainloop()

@@ -3,103 +3,90 @@ import numpy as np
 
 from SignalGenerator import *
 
-class SignalFile:
-    # Format nagłówka: t1(double), fs(double), is_complex(int64), n_samples(int64)
-    HEADER_FORMAT = 'ddqq'
-    HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
+class PlikSygnalu:
+    # Format nagłówka: czas_poczatkowy(double), czestotliwosc_probkowania(double), czy_zespolony(int64), liczba_probek(int64)
+    FORMAT_NAGLOWKA = 'ddqq'
+    ROZMIAR_NAGLOWKA = struct.calcsize(FORMAT_NAGLOWKA)
 
     @staticmethod
-    def save_to_binary(filename, signal_generator, n_samples):
-        # Zapisuje sygnał wraz z nagłówkiem do pliku binarnego
-        signal_generator.reset()
+    def zapisz_do_binarnego(nazwa_pliku, generator_sygnalu, liczba_probek):
+        generator_sygnalu.resetuj()
 
-        # Pobieramy metadane
-        t1 = float(signal_generator.params.get('t1', 0.0))
-        fs = float(signal_generator.fs)
+        czas_poczatkowy = float(generator_sygnalu.parametry.get('czas_poczatkowy', 0.0))
+        czestotliwosc_probkowania = float(generator_sygnalu.czestotliwosc_probkowania)
 
-        # Pobieramy próbki
-        samples = []
-        for _ in range(n_samples):
-            samples.append(next(signal_generator))
+        probki = []
+        for _ in range(liczba_probek):
+            probki.append(next(generator_sygnalu))
 
-        samples_array = np.array(samples, dtype=np.complex128 if np.iscomplexobj(samples) else np.float64)
-        is_complex = 1 if np.iscomplexobj(samples_array) else 0
+        tablica_probek = np.array(probki, dtype=np.complex128 if np.iscomplexobj(probki) else np.float64)
+        czy_zespolony = 1 if np.iscomplexobj(tablica_probek) else 0
 
-        with open(filename, 'wb') as f:
-            # Zapis nagłówka
-            header = struct.pack(SignalFile.HEADER_FORMAT, t1, fs, is_complex, n_samples)
-            f.write(header)
+        with open(nazwa_pliku, 'wb') as plik:
+            naglowek = struct.pack(PlikSygnalu.FORMAT_NAGLOWKA, czas_poczatkowy, czestotliwosc_probkowania, czy_zespolony, liczba_probek)
+            plik.write(naglowek)
 
-            # Zapis danych
-            if is_complex:
-                # Zespolone zapisujemy jako pary (real, imag)
-                flat_data = np.empty(n_samples * 2, dtype=np.float64)
-                flat_data[0::2] = samples_array.real
-                flat_data[1::2] = samples_array.imag
-                flat_data.tofile(f)
+            if czy_zespolony:
+                plaskie_dane = np.empty(liczba_probek * 2, dtype=np.float64)
+                plaskie_dane[0::2] = tablica_probek.real
+                plaskie_dane[1::2] = tablica_probek.imag
+                plaskie_dane.tofile(plik)
             else:
-                samples_array.astype(np.float64).tofile(f)
+                tablica_probek.astype(np.float64).tofile(plik)
 
-        print(f"Zapisano sygnał do {filename} (N={n_samples}, fs={fs}Hz, t1={t1}s)")
+        print(f"Zapisano sygnał do {nazwa_pliku} (N={liczba_probek}, fs={czestotliwosc_probkowania}Hz, t1={czas_poczatkowy}s)")
 
     @staticmethod
-    def load_from_binary(filename):
-        # Odczytuje sygnał i zwraca obiekt SignalGenerator
+    def wczytaj_z_binarnego(nazwa_pliku):
         try:
-            with open(filename, 'rb') as f:
-                header_data = f.read(SignalFile.HEADER_SIZE)
-                if not header_data: return None
+            with open(nazwa_pliku, 'rb') as plik:
+                dane_naglowka = plik.read(PlikSygnalu.ROZMIAR_NAGLOWKA)
+                if not dane_naglowka: return None
 
-                t1, fs, is_complex, n_samples = struct.unpack(SignalFile.HEADER_FORMAT, header_data)
+                czas_poczatkowy, czestotliwosc_probkowania, czy_zespolony, liczba_probek = struct.unpack(PlikSygnalu.FORMAT_NAGLOWKA, dane_naglowka)
 
-                if is_complex:
-                    raw_data = np.fromfile(f, dtype=np.float64)
-                    samples = raw_data[0::2] + 1j * raw_data[1::2]
+                if czy_zespolony:
+                    surowe_dane = np.fromfile(plik, dtype=np.float64)
+                    probki = surowe_dane[0::2] + 1j * surowe_dane[1::2]
                 else:
-                    samples = np.fromfile(f, dtype=np.float64)
+                    probki = np.fromfile(plik, dtype=np.float64)
 
-            # Tworzymy fabrykę, która pozwoli na resetowanie załadowanego sygnału
-            def loaded_gen_factory():
-                for s in samples:
-                    yield s
+            def wczytana_fabryka_generatorow():
+                for probka in probki:
+                    yield probka
 
-            return SignalGenerator(gen_factory=loaded_gen_factory, fs=fs, t1=t1)
+            return GeneratorSygnalu(fabryka_generatorow=wczytana_fabryka_generatorow, czestotliwosc_probkowania=czestotliwosc_probkowania, czas_poczatkowy=czas_poczatkowy)
         except Exception as e:
             print(f"Błąd odczytu: {e}")
             return None
 
     @staticmethod
-    def print_text_info(filename):
-        # Prezentacja danych z pliku w postaci tekstowej
-        with open(filename, 'rb') as f:
-            header_data = f.read(SignalFile.HEADER_SIZE)
-            t1, fs, is_complex, n_samples = struct.unpack(SignalFile.HEADER_FORMAT, header_data)
+    def wyswietl_informacje_tekstowe(nazwa_pliku):
+        with open(nazwa_pliku, 'rb') as plik:
+            dane_naglowka = plik.read(PlikSygnalu.ROZMIAR_NAGLOWKA)
+            czas_poczatkowy, czestotliwosc_probkowania, czy_zespolony, liczba_probek = struct.unpack(PlikSygnalu.FORMAT_NAGLOWKA, dane_naglowka)
 
-            print(f"\n--- INFORMACJE O PLIKU: {filename} ---")
-            print(f"Czas początkowy (t1):    {t1} s")
-            print(f"Częstotliwość (fs):     {fs} Hz")
-            print(f"Typ wartości:           {'Zespolone' if is_complex else 'Rzeczywiste'}")
-            print(f"Liczba próbek:          {n_samples}")
+            print(f"\n--- INFORMACJE O PLIKU: {nazwa_pliku} ---")
+            print(f"Czas początkowy:         {czas_poczatkowy} s")
+            print(f"Częstotliwość próbk:     {czestotliwosc_probkowania} Hz")
+            print(f"Typ wartości:            {'Zespolone' if czy_zespolony else 'Rzeczywiste'}")
+            print(f"Liczba próbek:           {liczba_probek}")
 
-            # Wczytanie surowych danych
-            raw_data = np.fromfile(f, dtype=np.float64)
+            surowe_dane = np.fromfile(plik, dtype=np.float64)
 
-            if is_complex:
-                # Rekonstrukcja liczb zespolonych
-                samples = raw_data[0::2] + 1j * raw_data[1::2]
-                print("Początkowe wartości (część zespolona):")
+            if czy_zespolony:
+                probki = surowe_dane[0::2] + 1j * surowe_dane[1::2]
+                print("Początkowe wartości (wymiar zespolony):")
             else:
-                samples = raw_data
-                print("Początkowe wartości (część rzeczywista):")
+                probki = surowe_dane
+                print("Początkowe wartości (wymiar rzeczywisty):")
 
-            # Wyświetlanie pierwszych 10 próbek
-            limit = min(len(samples), 10)
-            for i, val in enumerate(samples[:limit]):
-                if is_complex:
-                    # Ładne formatowanie liczb zespolonych
-                    print(f"[{i}]: {val.real:+.4f} {val.imag:+.4f}j")
+            limit = min(len(probki), 10)
+            for i, wartosc in enumerate(probki[:limit]):
+                if czy_zespolony:
+                    print(f"[{i}]: {wartosc.real:+.4f} {wartosc.imag:+.4f}j")
                 else:
-                    print(f"[{i}]: {val:+.4f}")
+                    print(f"[{i}]: {wartosc:+.4f}")
 
-            if len(samples) > limit:
+            if len(probki) > limit:
                 print("...")
