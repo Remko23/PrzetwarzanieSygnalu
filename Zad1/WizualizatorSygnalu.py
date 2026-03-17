@@ -1,4 +1,4 @@
-from SignalGenerator import *
+from GeneratorSygnalu import *
 import matplotlib.pyplot as plt
 
 class WizualizatorSygnalu:

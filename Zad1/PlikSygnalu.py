@@ -1,7 +1,7 @@
 import struct
 import numpy as np
 
-from SignalGenerator import *
+from GeneratorSygnalu import *
 
 class PlikSygnalu:
     # Format nagłówka: czas_poczatkowy(double), czestotliwosc_probkowania(double), czy_zespolony(int64), liczba_probek(int64)
