@@ -71,32 +71,22 @@ class GeneratorSygnalu:
 
         return GeneratorSygnalu(fabryka_generatorow=fabryka_polaczona, czestotliwosc_probkowania=self.czestotliwosc_probkowania)
 
-    # --- Obliczanie statystyk ---
     def pobierz_statystyki(self, liczba_probek=None):
         self.resetuj()
-
-        # Pobieramy okres z parametrów, jeśli istnieje
         okres = self.parametry.get('okres')
 
         if okres is not None:
-            # Obliczamy ile próbek przypada na jeden pełny okres
             probki_na_okres = okres * self.czestotliwosc_probkowania
-
-            # Wyznaczamy liczbę pełnych okresów, które zmieszczą się w zadanej liczbie próbek
-            # Jeśli użytkownik nie podał n_samples, weźmiemy domyślnie np. 1000
             docelowe_n = liczba_probek if liczba_probek else 1000
             liczba_okresow = max(1, int(docelowe_n / probki_na_okres))
 
-            # Ostateczna liczba próbek będąca całkowitą wielokrotnością okresu
             rzeczywiste_n = int(liczba_okresow * probki_na_okres)
 
             print(f"> Analiza okresowa: Pobieram {liczba_okresow} pełnych okresów ({rzeczywiste_n} próbek).")
         else:
-            # Dla sygnałów nieokresowych (szumy, skoki) bierzemy n_samples
             rzeczywiste_n = liczba_probek if liczba_probek else 1000
             print(f"> Analiza standardowa: Pobieram {rzeczywiste_n} próbek.")
 
-        # Pobieranie próbek
         probki = np.array([next(self) for _ in range(rzeczywiste_n)])
         self.resetuj()
 

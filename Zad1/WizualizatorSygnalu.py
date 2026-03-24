@@ -34,9 +34,9 @@ class WizualizatorSygnalu:
         wykresy = []
 
         if not np.iscomplexobj(probki):
-            # --- SYGNAŁ RZECZYWISTY ---
+            # Sygnal Rzeczywisty
             wykres, (os_czasowa, os_histogramu) = plt.subplots(2, 1, figsize=(10, 8))
-            wykres.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
+            wykres.patch.set_facecolor('#2b2b2b')
             wykres.suptitle(tytul)
             WizualizatorSygnalu._rysuj_wspolne(os_czasu, probki.real, os_czasowa, os_histogramu, liczba_przedzialow, "Amplituda", "cyan", czy_dyskretny)
             os_czasowa.set_title("Przebieg czasowy")
@@ -44,10 +44,10 @@ class WizualizatorSygnalu:
             wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
             wykresy.append(("Sygnał Rzeczywisty", wykres))
         else:
-            # --- SYGNAŁ ZESPOLONY ---
+            # Sygnal zespolony
             for typ_wykresu in ['rzecz_uroj', 'modul_faza']:
                 wykres, osie = plt.subplots(2, 2, figsize=(12, 10))
-                wykres.patch.set_facecolor('#2b2b2b') # Dopasowanie do okna Tkinter
+                wykres.patch.set_facecolor('#2b2b2b')
                 wykres.suptitle(f"{tytul} - {typ_wykresu.upper()}")
 
                 if typ_wykresu == 'rzecz_uroj':

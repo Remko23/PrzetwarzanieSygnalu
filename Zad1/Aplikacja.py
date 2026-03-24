@@ -347,6 +347,12 @@ class Aplikacja(tk.Tk):
 
             self.loguj_wiadomosc(
                 f"Wyświetlono wizualizację na {liczba_probek} próbkach i {liczba_przedzialow} przedziałach.")
+
+            self.pokaz_statystyki()
+
+            if self.notatnik_wizualizacji.tabs():
+                self.notatnik_wizualizacji.select(0)
+
         except Exception as e:
             messagebox.showerror("Błąd wizualizacji", str(e))
 
@@ -375,5 +381,55 @@ class Aplikacja(tk.Tk):
                     wartosc_tekstowa = f"{wartosc:.4f}"
                 self.loguj_wiadomosc(f" {nazwa:<25}: {wartosc_tekstowa}")
             self.loguj_wiadomosc("-" * 35)
+
+            for tab_id in self.notatnik_wizualizacji.tabs():
+                if self.notatnik_wizualizacji.tab(tab_id, "text") == "Statystyki":
+                    self.notatnik_wizualizacji.forget(tab_id)
+                    break
+
+            ramka_stat = ttk.Frame(self.notatnik_wizualizacji)
+            self.notatnik_wizualizacji.add(ramka_stat, text="Statystyki")
+            self.notatnik_wizualizacji.select(ramka_stat)
+
+            kontener = tk.Frame(ramka_stat, bg="#2b2b2b", padx=40, pady=30)
+            kontener.pack(fill=tk.BOTH, expand=True)
+            tk.Label(kontener, text="Parametry sygnału", font=("Arial", 16, "bold"),
+                     bg="#2b2b2b", fg="#ffffff").pack(anchor=tk.W, pady=(0, 5))
+
+            rzeczywiste_n = statystyki.get("liczba_probek", liczba_probek)
+            czas_trwania = statystyki.get("czas_trwania_sygnalu", 0)
+            tk.Label(kontener,
+                     text=f"Liczba próbek: {rzeczywiste_n}   |   Czas trwania: {czas_trwania:.4f} s",
+                     font=("Arial", 10), bg="#2b2b2b", fg="#aaaaaa").pack(anchor=tk.W, pady=(0, 20))
+
+            tk.Frame(kontener, height=1, bg="#555555").pack(fill=tk.X, pady=(0, 15))
+
+            etykiety = {
+                "srednia": "Wartość średnia",
+                "srednia_bezwzgledna": "Wartość średnia bezwzględna",
+                "wartosc_skuteczna": "Wartość skuteczna (RMS)",
+                "wariancja": "Wariancja",
+                "moc": "Moc średnia",
+            }
+
+            for klucz, etykieta in etykiety.items():
+                wartosc = statystyki.get(klucz)
+                if wartosc is None:
+                    continue
+
+                wiersz = tk.Frame(kontener, bg="#2b2b2b")
+                wiersz.pack(fill=tk.X, pady=4)
+
+                tk.Label(wiersz, text=etykieta, font=("Arial", 12),
+                         bg="#2b2b2b", fg="#e0e0e0", width=30, anchor=tk.W).pack(side=tk.LEFT)
+
+                if isinstance(wartosc, (complex, np.complex128)):
+                    tekst_wartosci = f"{wartosc.real:.6f} + {wartosc.imag:.6f}j"
+                else:
+                    tekst_wartosci = f"{wartosc:.6f}"
+
+                tk.Label(wiersz, text=tekst_wartosci, font=("Consolas", 12, "bold"),
+                         bg="#2b2b2b", fg="#4fc3f7", anchor=tk.W).pack(side=tk.LEFT, padx=(10, 0))
+
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
