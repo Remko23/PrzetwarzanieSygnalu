@@ -6,7 +6,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 from GeneratorSygnalu import GeneratorSygnalu
 from PlikSygnalu import PlikSygnalu
 from WizualizatorSygnalu import WizualizatorSygnalu
-
+from KonwerterSygnalu import KonwerterSygnalu
 
 class Aplikacja(tk.Tk):
     def __init__(self):
@@ -129,7 +129,23 @@ class Aplikacja(tk.Tk):
                                             command=self.wykonaj_operacje)
         self.przycisk_operacji.grid(row=3, column=0, columnspan=2, pady=10)
 
-        ramka_akcji = ttk.LabelFrame(lewa_ramka, text="3. Akcje na Głównym Sygnale", padding="10")
+        ramka_konwersji = ttk.LabelFrame(lewa_ramka, text="3. Próbkowanie i Kwantyzacja (A/C i C/A)", padding="10")
+        ramka_konwersji.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(ramka_konwersji, text="Tryb:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.wybor_trybu_konwersji = ttk.Combobox(ramka_konwersji, values=["Próbkowanie i Rekonstrukcja", "Kwantyzacja"], state="readonly", width=28)
+        self.wybor_trybu_konwersji.current(0)
+        self.wybor_trybu_konwersji.grid(row=0, column=1, sticky=tk.W, pady=2, columnspan=3)
+        self.wybor_trybu_konwersji.bind("<<ComboboxSelected>>", self.aktualizuj_interfejs_konwersji)
+        
+        self.ramka_param_konwersji = ttk.Frame(ramka_konwersji)
+        self.ramka_param_konwersji.grid(row=1, column=0, columnspan=4, pady=5, sticky=tk.W)
+        
+        self.przycisk_wykonaj_konwersje = ttk.Button(ramka_konwersji, text="Wykonaj Konwersję", command=self.wykonaj_konwersje)
+        self.przycisk_wykonaj_konwersje.grid(row=2, column=0, columnspan=4, pady=5)
+        self.aktualizuj_interfejs_konwersji()
+
+        ramka_akcji = ttk.LabelFrame(lewa_ramka, text="4. Akcje na Głównym Sygnale i Logi", padding="10")
         ramka_akcji.pack(fill=tk.BOTH, expand=True, pady=5)
 
         ramka_przyciskow_akcji = ttk.Frame(ramka_akcji)
@@ -157,7 +173,7 @@ class Aplikacja(tk.Tk):
         ttk.Button(ramka_parametrow_globalnych, text="Wizualizuj (Wykres + Histogram)",
                    command=self.wizualizuj_sygnal).grid(row=2, column=0, columnspan=2, pady=10)
 
-        self.pole_tekstowe_logow = tk.Text(ramka_akcji, height=15, state=tk.DISABLED, bg="#3c3f41", fg="#e0e0e0",
+        self.pole_tekstowe_logow = tk.Text(ramka_akcji, height=10, state=tk.DISABLED, bg="#3c3f41", fg="#e0e0e0",
                                            insertbackground="#ffffff")
         self.pole_tekstowe_logow.pack(fill=tk.BOTH, expand=True, pady=5)
 
@@ -433,3 +449,140 @@ class Aplikacja(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
+
+    def aktualizuj_interfejs_konwersji(self, event=None):
+        for w in self.ramka_param_konwersji.winfo_children():
+            w.destroy()
+            
+        tryb = self.wybor_trybu_konwersji.get()
+        self.parametry_konwersji_pola = {}
+        
+        if tryb == "Próbkowanie i Rekonstrukcja":
+            ttk.Label(self.ramka_param_konwersji, text="f próbkowania (Hz):").grid(row=0, column=0, padx=2, pady=2, sticky=tk.W)
+            pol_fs = ttk.Entry(self.ramka_param_konwersji, width=8)
+            pol_fs.insert(0, "100")
+            pol_fs.grid(row=0, column=1, padx=2, pady=2)
+            self.parametry_konwersji_pola['f_sample'] = pol_fs
+            
+            ttk.Label(self.ramka_param_konwersji, text="Rekonstrukcja:").grid(row=0, column=2, padx=2, pady=2, sticky=tk.W)
+            pol_rek = ttk.Combobox(self.ramka_param_konwersji, values=["ZOH", "FOH", "Sinc"], state="readonly", width=8)
+            pol_rek.current(0)
+            pol_rek.grid(row=0, column=3, padx=2, pady=2)
+            self.parametry_konwersji_pola['rekonstrukcja'] = pol_rek
+
+            ttk.Label(self.ramka_param_konwersji, text="Sinc próbki:").grid(row=1, column=2, padx=2, pady=2, sticky=tk.W)
+            pol_sinc = ttk.Entry(self.ramka_param_konwersji, width=8)
+            pol_sinc.insert(0, "50")
+            pol_sinc.grid(row=1, column=3, padx=2, pady=2)
+            self.parametry_konwersji_pola['sinc_n'] = pol_sinc
+            
+        elif tryb == "Kwantyzacja":
+            ttk.Label(self.ramka_param_konwersji, text="Liczba bitów:").grid(row=0, column=0, padx=2, pady=2, sticky=tk.W)
+            pol_bit = ttk.Entry(self.ramka_param_konwersji, width=8)
+            pol_bit.insert(0, "8")
+            pol_bit.grid(row=0, column=1, padx=2, pady=2)
+            self.parametry_konwersji_pola['bity'] = pol_bit
+            
+            ttk.Label(self.ramka_param_konwersji, text="Algorytm:").grid(row=0, column=2, padx=2, pady=2, sticky=tk.W)
+            pol_alg = ttk.Combobox(self.ramka_param_konwersji, values=["Obcięcie", "Zaokrąglenie"], state="readonly", width=12)
+            pol_alg.current(0)
+            pol_alg.grid(row=0, column=3, padx=2, pady=2)
+            self.parametry_konwersji_pola['algorytm'] = pol_alg
+
+    def wykonaj_konwersje(self):
+        if not self.sygnal_glowny:
+            messagebox.showerror("Błąd", "Najpierw wygeneruj lub wczytaj sygnał główny!")
+            return
+            
+        tryb = self.wybor_trybu_konwersji.get()
+        liczba_probek = int(self.pole_liczba_probek.get())
+        
+        self.sygnal_glowny.resetuj()
+        probki_high = np.array([next(self.sygnal_glowny) for _ in range(liczba_probek + 1)])
+        if np.iscomplexobj(probki_high):
+            messagebox.showerror("Błąd", "Konwersja A/C i C/A obsługuje tylko sygnały rzeczywiste!")
+            return
+            
+        f_high = self.sygnal_glowny.czestotliwosc_probkowania
+        czas_poczatkowy = self.sygnal_glowny.parametry.get('czas_poczatkowy', 0.0)
+        T_h = 1.0 / f_high
+        czas_high = np.arange(liczba_probek + 1) * T_h + czas_poczatkowy
+        
+        self.sygnal_glowny.resetuj()
+        
+        try:
+            for tab_id in self.notatnik_wizualizacji.tabs():
+                if self.notatnik_wizualizacji.tab(tab_id, "text") == "Wyniki Konwersji":
+                    self.notatnik_wizualizacji.forget(tab_id)
+            
+            ramka_wynikow = ttk.Frame(self.notatnik_wizualizacji)
+            self.notatnik_wizualizacji.add(ramka_wynikow, text="Wyniki Konwersji")
+            self.notatnik_wizualizacji.select(ramka_wynikow)
+            
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+            from WizualizatorSygnalu import WizualizatorSygnalu
+            konwerter = KonwerterSygnalu()
+            liczba_przedzialow = int(self.pole_liczba_przedzialow.get())
+            
+            if tryb == "Próbkowanie i Rekonstrukcja":
+                f_sample = float(self.parametry_konwersji_pola['f_sample'].get())
+                rekonstrukcja = self.parametry_konwersji_pola['rekonstrukcja'].get()
+                sinc_n = int(self.parametry_konwersji_pola['sinc_n'].get())
+                
+                t_sample, x_sample = konwerter.probkowanie_rownomierne(czas_high, probki_high, f_sample)
+                
+                if rekonstrukcja == "ZOH":
+                    x_rec = konwerter.rekonstrukcja_zoh(t_sample, x_sample, czas_high)
+                elif rekonstrukcja == "FOH":
+                    x_rec = konwerter.rekonstrukcja_foh(t_sample, x_sample, czas_high)
+                elif rekonstrukcja == "Sinc":
+                    x_rec = konwerter.rekonstrukcja_sinc(t_sample, x_sample, czas_high, sinc_n)
+                
+                sygnal_oryg = probki_high
+                sygnal_porown = x_rec
+                
+                opis = f"Próbkowanie: {f_sample} Hz, Odtwarzanie: {rekonstrukcja}"
+                wykresy = WizualizatorSygnalu.rysuj_konwersje(czas_high, sygnal_oryg, sygnal_porown, tryb, opis, liczba_przedzialow, f_sample=f_sample, t_sample=t_sample, x_sample=x_sample)
+
+            else:
+                bity = int(self.parametry_konwersji_pola['bity'].get())
+                algorytm = self.parametry_konwersji_pola['algorytm'].get()
+                
+                if algorytm == "Obcięcie":
+                    x_quant = konwerter.kwantyzacja_obcieciem(probki_high, bity)
+                else:
+                    x_quant = konwerter.kwantyzacja_zaokragleniem(probki_high, bity)
+                    
+                sygnal_oryg = probki_high
+                sygnal_porown = x_quant
+                
+                opis = f"Algorytm: {algorytm}, Bity: {bity}"
+                wykresy = WizualizatorSygnalu.rysuj_konwersje(czas_high, sygnal_oryg, sygnal_porown, tryb, opis, liczba_przedzialow)
+
+            for tytul, wykres in wykresy:
+                plotno = FigureCanvasTkAgg(wykres, master=ramka_wynikow)
+                plotno.draw()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+                pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka_wynikow)
+                pasek_narzedzi.update()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            mse = konwerter.oblicz_mse(sygnal_oryg, sygnal_porown)
+            snr = konwerter.oblicz_snr(sygnal_oryg, sygnal_porown)
+            psnr = konwerter.oblicz_psnr(sygnal_oryg, sygnal_porown)
+            md = konwerter.oblicz_md(sygnal_oryg, sygnal_porown)
+            
+            self.loguj_wiadomosc(f"--- Wyniki Konwersji ({tryb}) ---")
+            self.loguj_wiadomosc(f" MSE  : {mse:.6f}")
+            self.loguj_wiadomosc(f" SNR  : {snr:.6f} dB")
+            self.loguj_wiadomosc(f" PSNR : {psnr:.6f} dB")
+            self.loguj_wiadomosc(f" MD   : {md:.6f}")
+            if tryb == "Kwantyzacja":
+                enob = konwerter.oblicz_enob(snr)
+                self.loguj_wiadomosc(f" ENOB : {enob:.4f} bitów")
+            self.loguj_wiadomosc("-" * 35)
+
+        except Exception as e:
+            messagebox.showerror("Błąd", str(e))
+

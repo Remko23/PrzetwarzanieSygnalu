@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="f03535bc-2c3d-4861-876d-133e4bf2df22" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Zad1/SignalFile.py" beforeDir="false" afterPath="$PROJECT_DIR$/Zad1/SignalFile.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Zad1/SignalGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/Zad1/SignalGenerator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Zad1/SignalVisualizer.py" beforeDir="false" afterPath="$PROJECT_DIR$/Zad1/SignalVisualizer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Zad1/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Zad1/main.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +54,11 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "ai.playground.ignore.import.keys.banner.in.settings": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "C:/Users/makky/BAZA/PrzetwarzanieSygnalu",
+    "last_opened_file_path": "C:/Users/makky/Drone_Localization_Algorithms",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   }
@@ -81,6 +84,9 @@
       <workItem from="1773303600917" duration="125000" />
       <workItem from="1773304329285" duration="101000" />
       <workItem from="1773306931819" duration="276000" />
+      <workItem from="1773687226247" duration="36000" />
+      <workItem from="1774355590836" duration="1347000" />
+      <workItem from="1774468415233" duration="84000" />
     </task>
     <servers />
   </component>

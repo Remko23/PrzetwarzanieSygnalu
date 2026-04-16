@@ -66,3 +66,39 @@ class WizualizatorSygnalu:
                 wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
 
         return wykresy
+
+    @staticmethod
+    def rysuj_konwersje(czas_high, sygnal_oryg, sygnal_nowy, tryb, parametry_opis, liczba_przedzialow, f_sample=None, t_sample=None, x_sample=None):
+        plt.style.use('dark_background')
+        wykres, (os_czasowa, os_histogramu) = plt.subplots(2, 1, figsize=(10, 8))
+        wykres.patch.set_facecolor('#2b2b2b')
+        wykres.suptitle(f"{tryb} - {parametry_opis}")
+
+        # Przebieg czasowy
+        os_czasowa.plot(czas_high, sygnal_oryg, color='green', alpha=0.6, label='Oryginał', linewidth=1)
+        os_czasowa.plot(czas_high, sygnal_nowy, color='cyan', label='Wynik Konwersji', linewidth=1.5)
+        
+        if f_sample and t_sample is not None and x_sample is not None:
+            os_czasowa.scatter(t_sample, x_sample, color='red', s=15, label='Próbki', zorder=5)
+
+        os_czasowa.set_title("Przebieg czasowy")
+        os_czasowa.set_ylabel("Amplituda")
+        os_czasowa.grid(True, linestyle='--', color='gray', alpha=0.5)
+        os_czasowa.legend()
+
+        # Histogram (korzystamy z wyniku konwersji jako glownego)
+        dane = sygnal_nowy
+        minimum_danych = np.min(dane)
+        maksimum_danych = np.max(dane)
+
+        if np.isclose(minimum_danych, maksimum_danych):
+            os_histogramu.hist(dane, bins=1, color='cyan', edgecolor='white', alpha=0.7)
+            os_histogramu.set_title(f"Histogram (wartość stała: {minimum_danych:.2f})")
+        else:
+            os_histogramu.hist(dane, bins=liczba_przedzialow, color='cyan', edgecolor='white', alpha=0.7)
+
+        os_histogramu.set_ylabel("Częstość")
+        os_histogramu.set_title("Histogram wyniku konwersji")
+        
+        wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+        return [("Wyniki Konwersji", wykres)]
