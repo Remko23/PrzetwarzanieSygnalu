@@ -1,0 +1,262 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[T1]{polski}
+\usepackage[utf8]{inputenc}
+\newcommand{\BibTeX}{{\sc Bib}\TeX} 
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{subcaption}
+
+\setlength{\textheight}{21cm}
+
+\title{{\bf Zadanie nr 1 - Generacja sygnału i szumu}\linebreak
+Cyfrowe Przetwarzanie Sygnałów}
+\author{Maciej Miazek 251589 \and Remigiusz Tomecki 251652}
+\date{26.03.2026 r.}
+
+\begin{document}
+\clearpage\maketitle
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+\section{Cel zadania}
+Celem zadania było zaimplementowanie aplikacji, która umożliwi generacje sygnałów i szumów o określonych parametrach (w ramach dodatkowej funkcjonalności również generację sygnału zespolonego), operacje arytmetyczne na sygnałach dyskretnych (dodawanie, odejmowanie, mnożenie i dzielenie), zapisywanie i doczytywanie z pliku binarnego oraz prezentację graficzną sygnałów.\\
+
+\section{Wstęp teoretyczny}
+\subsection{Szumy i Sygnały}
+
+\textbf{Podstawowe:}
+\subsubsection*{Szum o rozkładzie jednostajnym (S1)}
+Sygnał losowy, w którym amplituda przyjmuje wartości z zakresu $\langle-A, A\rangle$. Każda wartość z tego przedziału jest generowana z jednakowym prawdopodobieństwem.
+
+\subsubsection*{Szum Gaussowski (S2)}
+Szum, w którym amplituda przyjmuje wartości losowe o rozkładzie normalnym (gaussowskim). Funkcja gęstości prawdopodobieństwa jest skupiona wokół średniej $\mu=0$ z odchyleniem standardowym $\sigma=1$.
+
+\subsubsection*{Sygnał sinusoidalny (S3)}
+Klasyczny sygnał okresowy opisany funkcją: $x(t)=A \sin(\frac{2\pi}{T}(t-t_{1}))$, gdzie $A$ oznacza amplitudę, $T$ okres podstawowy, a $t_1$ czas początkowy.
+
+\subsubsection*{Sygnał sinusoidalny wyprostowany jednopołówkowo (S4)}
+Przebieg będący wynikiem usunięcia ujemnych wartości sinusoidy. Funkcja przyjmuje wartości dodatnie zgodne z przebiegiem sinusa, natomiast w miejscu wartości ujemnych przyjmuje zero.
+
+\subsubsection*{Sygnał sinusoidalny wyprostowany dwupołówkowo (S5)}
+Sygnał będący wartością bezwzględną funkcji sinusoidalnej: $x(t)=A |\sin(\frac{2\pi}{T}(t-t_{1}))|$. Wszystkie półokresy ujemne zostają „odbite” względem osi czasu na stronę dodatnią.
+
+\subsubsection*{Sygnał prostokątny (S6)}
+Sygnał okresowy, który w ramach jednego okresu przyjmuje wartość maksymalną $A$ przez czas określony współczynnikiem wypełnienia $k_w$, a przez pozostałą część okresu wynosi 0.
+
+\subsubsection*{Sygnał prostokątny symetryczny (S7)}
+Wariant sygnału prostokątnego, w którym zamiast przełączać się między $A$ a 0, sygnał przyjmuje naprzemiennie wartości $A$ oraz $-A$ przy zachowaniu symetrii względem osi czasu.
+
+\subsubsection*{Sygnał trójkątny (S8)}
+Sygnał okresowy o liniowo zmiennej amplitudzie. Współczynnik wypełnienia $k_w$ definiuje tutaj stosunek czasu trwania zbocza narastającego do pełnego czasu trwania okresu $T$.
+
+\subsubsection*{Skok jednostkowy (S9)}
+Sygnał ciągły opisujący gwałtowną zmianę stanu. Dla czasu mniejszego od momentu skoku $t_s$ wartość wynosi 0, w punkcie $t_s$ wynosi $1/2 A$, a dla czasów późniejszych utrzymuje stały poziom $A$.
+
+\subsubsection*{Impuls jednostkowy (S10)}
+Sygnał dyskretny (delta Kroneckera) przyjmujący wartość $A$ tylko dla jednej, konkretnej próbki o numerze $n_s$. Dla wszystkich pozostałych próbek sygnał ma wartość 0.
+
+\subsubsection*{Szum impulsowy (S11)}
+Sygnał dyskretny, w którym amplituda przyjmuje wartość 0 lub $A$. Wystąpienie wartości niezerowej $A$ zależy od zdefiniowanego prawdopodobieństwa $p$.
+\newpage
+\textbf{Dodatkowe:}
+\subsubsection*{Sygnał zespolony}
+Sygnał zespolony to sygnał, który zamiast pojedynczej wartości rzeczywistej składa się z pary liczb: części rzeczywistej (Re) oraz części urojonej (Im). Sygnał ten może być prezentowany na dwa sposoby:\\
+\begin{enumerate}
+    \item Postać kartezjańska - dwa osobne wykresy (górny reprezentuje część rzeczywistą sygnału, a dolny część urojoną)
+    \item Postać biegunowa - dwa wykresy: (górny przedstawia moduł liczby zespolonej (amplitudę) a dolny jej fazę (kąt))
+\end{enumerate}
+
+\subsection{Operacje arytmetyczne}
+Przetwarzanie sygnałów w dziedzinie czasu polega na wykonywaniu operacji matematycznych na odpowiadających sobie próbkach dwóch sygnałów dyskretnych.
+
+\subsubsection{Dodawanie (D1)}
+Operacja polegająca na sumowaniu wartości amplitud dwóch sygnałów wejściowych dla każdego punktu czasowego (próbki).
+
+\subsubsection{Odejmowanie (D2)}
+Wyznaczanie różnicy amplitud dwóch sygnałów. Od wartości próbki pierwszego sygnału odejmowana jest wartość odpowiadającej jej próbki drugiego sygnału.
+
+\subsubsection{Mnożenie (D3)}
+Iloczyn amplitud sygnałów. Operacja ta znajduje zastosowanie m.in. przy procesach modulacji i skalowania sygnałów.
+
+\subsubsection{Dzielenie (D4)}
+Obliczanie stosunku amplitud dwóch sygnałów. Podczas implementacji należy uwzględnić zabezpieczenie przed dzieleniem przez zero w punktach, gdzie sygnał w mianowniku ma wartość 0.
+
+\section{Opis implementacji}
+Aplikacja została napisana w języku Python. W ramach realizacji zadania posługiwaliśmy się bibliotekami: \verb|Matplotlib| - do generowania wykresów, \verb|Numpy| - do operacji na wektorach, \verb|Tkinter| - do utworzenia graficznego interfejsu użytkownika oraz \verb|Struct| - do operowania plikami binarnymi. \\
+W programie wykorzystano wzorzec projektowy \verb|Metody Fabryki| oraz \verb|Generatora|.
+
+\section{Instrukcja obsługi aplikacji}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{GUI.png}
+    \caption{Interfejs graficzny aplikacji}
+\end{figure}
+
+Po uruchomieniu aplikacji użytkownik może:
+\begin{enumerate}
+    \item Wygenerować sygnał/szum (z dostosowanymi przez siebie parametrami) w okienku Generacja Sygnału Głównego
+    \item Wykonać operację arytmetyczną szumu głównego z innym wybranym szumem (z dostosowanymi przez siebie parametrami) w okienku Operacje Matematyczne
+    \item Zapisać/wczytać główny sygnał do/z pliku (wynik operacji arytmetycznej staje się głównym sygnałem) w okienku Akcje na głównym sygnale
+    \item Wygenerować wykresy głównego sygnału z dostosowaniem liczby próbek w oknie i liczby binów histogramu w okienku Akcje na głównym sygnale
+\end{enumerate}
+
+\section{Eksperymenty i wyniki}
+Opis wykonywanych eksperymentów. Wymagane jest ilustrowanie przeprowadzanych doświadczeń wykresami oraz tabelami.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PODROZDZIAŁ PT. EKSPERYMENT NR 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\subsection{Analiza Wpływu współczynnika wypełnienia na kształt wykresu}
+Eksperyment polegał na zbadaniu wpływu współczynnika wypełnienia ($k_w$) na kształt sygnału trójkątnego (S8)
+
+\subsubsection{Założenia}
+W eksperymencie generujemy sygnał dany wzorem:
+\begin{equation}
+x(t) = 
+\begin{cases} 
+\frac{A}{k_w T}(t - kT - t_1) & \text{dla } t \in [kT + t_1, k_w T + kT + t_1) \\ 
+\frac{-A}{T(1 - k_w)}(t - kT - t_1) + \frac{A}{1 - k_w} & \text{dla } t \in [k_w T + t_1 + kT, T + kT + t_1) 
+\end{cases} 
+\quad dla \ k \in C
+\end{equation}
+
+\subsubsection{Przebieg}
+Wygenerowaliśmy i porównaliśmy wykresy oraz statystyki sygnału dla pięciu wybranych wartości $k_w$ (0, 0.25, 0.5, 0.75, 1). Pozostałe parametry ustawione zostały w następujący sposób: $A = 1$, $t_1 = 0.0$, $d = 1.0$, $T = 1.0$.
+
+\subsubsection{Rezultat}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+        \textbf{Wartość $k_w$} & \textbf{0.00} & \textbf{0.25} & \textbf{0.50} & \textbf{0.75} & \textbf{1.00} \\ \hline
+        Wartość średnia & 0.5005 & 0.5000 & 0.5000 & 0.5000 & 0.4995\\ \hline
+        Wartość średnia bezwzględna & 0.5005 & 0.5000 & 0.5000 & 0.5000 & 0.4995\\ \hline
+        Wartość Skuteczna (RMS) & 0.5778 & 0.5773 & 0.5773 & 0.5773 & 0.5769\\ \hline
+        Wariancja & 0.0833 & 0.0833 & 0.0833 & 0.0833 & 0.0833\\ \hline
+        Moc Średnia & 0.3338 & 0.3333 & 0.3333 & 0.3333 & 0.3328 \\ \hline
+    \end{tabular}
+    \caption{Tabela porównawcza statystyk sygnału względem $k_w$}
+\end{table}
+
+Z powyższej tabeli zauważamy, że parametr $k_w$ miał znikomy wpływ na wartości średniej, średniej bezwzględnej, skutecznej, warancji i mocy średniej sygnału.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.46\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/kw0.png}
+        \caption{$k_w = 0$}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.46\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/kw0_25.png}
+        \caption{$k_w = 0.25$}
+    \end{subfigure}
+
+    \vspace{0.5cm} 
+    \begin{subfigure}{0.46\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/kw0_5.png}
+        \caption{$k_w = 0.5$}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.46\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/kw0_75.png}
+        \caption{$k_w = 0.75$}
+    \end{subfigure}
+
+    \vspace{0.5cm}
+
+    \begin{subfigure}{0.46\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/kw1.png}
+        \caption{$k_w = 1$}
+    \end{subfigure}
+
+    \caption{Zestawienie wykresów sygnału trójkątnego ($S8$) dla różnych wartości współczynnika $k_w$, liczba próbek = 1000, przedziały histogramu: 20.}
+\end{figure}
+Powyższe wykresy potwierdzają, że wygląd wykresu sygnału trójkątnego (S8) jest silnie powiązany z parametrem $k_w$.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PODROZDZIAŁ PT. EKSPERYMENT NR 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Badanie wpływu szumu Gaussowskiego na sygnał zespolony}
+Celem eksperymentu było zbadanie wpływu szumu Gaussowskiego na Sygnał Zespolony poprzez wykonanie ich sumy.
+
+\subsubsection{Założenia}
+Sygnał Zespolony definiujemy wzorem:
+\begin{equation}
+    x(t) = A \cdot e^{j \frac{2\pi}{T}(t - t_1)}
+\end{equation}
+
+\subsubsection{Przebieg}
+W celu wykonania eksperymentu wygenerowaliśmy Sygnał Zespolony, a następnie dodaliśmy do niego Szumu Gaussowkiego w celu zaobserwowania wpływu szumu na sygnał. \\
+Zestaw parametrów dla:
+sygnału zespolonego: $A = 1$, $t_1 = 0$, $d = 1$ i $T = 1$ \\
+Szumu Gaussowskiego: $A = 1$, $t_1 = 0$, $d = 1$
+\newpage
+
+\subsubsection{Rezultat}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+    \hline
+        \textbf{Rodzaj Sygnału} & \textbf{(S12)} & \textbf{(S12) + (S2) } \\ \hline
+        Wartość średnia & 0.0000 + 0.0000j & -0.0379 + 0.0000j\\ \hline
+        Wartość średnia bezwzględna & 1.0000 & 1.2606\\ \hline
+        Wartość Skuteczna (RMS) & 0.0000 + 0.0000j & 0.9875 + 0.0068j \\ \hline
+        Wariancja & 1.0000 & 1.9737 \\ \hline
+        Moc Średnia & 0.0000 + 0.00j & 0.9752 + 0.0134j \\ \hline
+    \end{tabular}
+    \caption{Tabela porównawcza statystyk sygnału względem $k_w$}
+\end{table}
+
+Powyższa tabela ukazuje, że dodanie szumu wyraźnie wpłynęło na każdą ze statystyk sygnału. Wartość średnia lekko zmalała, natomiast bezwgzlędna wartość średnia wzrosła. Dodanie szumu gaussowskiego powiększyło również wartość skuteczną, wariancję oraz moc średnią.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/rzecz_uroj.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/mod_faza.png}
+    \end{subfigure}
+
+    \caption{Wykresy sygnału zespolonego (S12) przed dodaniem szumu}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/rzecz_uroj_2.png}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{wykresy/mod_faza_2.png}
+    \end{subfigure}
+
+    \caption{Wykresy sygnału zespolonego (S12) + Szum Gaussowski (S2), liczba próbek = 1000, przedziały histogramu: 20}
+\end{figure}
+Powyższe wykresy przedstawiają widoczny wpływ szumu gaussowskiego na sygnał zespolony po ich zsumowaniu.
+
+
+\newpage
+\section{Wnioski}
+Stosując generatory \textit{yield} można zoptymalizować zużycie pamięci (eliminacja alokacji dużych buforów pamięci).
+Wykorzystanie biblioteki Numpy znacząco przyspieszyło proces przetwarzania wektorowego sygnałów, co jest niezbędne przy generowaniu dużej liczby próbek.
+Kluczowym elementem zapewniającym spójność danych jest binarny zapis z odpowiednio zdefiniowanym nagłówkiem; pozwala on na poprawną rekonstrukcję sygnału, w szczególności w kontekście częstotliwości próbkowania ($f_s$), warunkującej prawidłowe skalowanie osi czasu.
+
+\end{document}
