@@ -468,13 +468,18 @@ class Aplikacja(tk.Tk):
             pol_rek = ttk.Combobox(self.ramka_param_konwersji, values=["ZOH", "FOH", "Sinc"], state="readonly", width=8)
             pol_rek.current(0)
             pol_rek.grid(row=0, column=3, padx=2, pady=2)
+            pol_rek.bind("<<ComboboxSelected>>", self.aktualizuj_widocznosc_sinc)
             self.parametry_konwersji_pola['rekonstrukcja'] = pol_rek
 
-            ttk.Label(self.ramka_param_konwersji, text="Sinc próbki:").grid(row=1, column=2, padx=2, pady=2, sticky=tk.W)
+            self.etykieta_sinc = ttk.Label(self.ramka_param_konwersji, text="Sinc próbki:")
+            self.etykieta_sinc.grid(row=1, column=2, padx=2, pady=2, sticky=tk.W)
             pol_sinc = ttk.Entry(self.ramka_param_konwersji, width=8)
             pol_sinc.insert(0, "50")
             pol_sinc.grid(row=1, column=3, padx=2, pady=2)
             self.parametry_konwersji_pola['sinc_n'] = pol_sinc
+            
+            # Ustawienie początkowej widoczności
+            self.aktualizuj_widocznosc_sinc()
             
         elif tryb == "Kwantyzacja":
             ttk.Label(self.ramka_param_konwersji, text="Liczba bitów:").grid(row=0, column=0, padx=2, pady=2, sticky=tk.W)
@@ -488,6 +493,17 @@ class Aplikacja(tk.Tk):
             pol_alg.current(0)
             pol_alg.grid(row=0, column=3, padx=2, pady=2)
             self.parametry_konwersji_pola['algorytm'] = pol_alg
+
+    def aktualizuj_widocznosc_sinc(self, event=None):
+        if 'rekonstrukcja' not in self.parametry_konwersji_pola or 'sinc_n' not in self.parametry_konwersji_pola:
+            return
+            
+        if self.parametry_konwersji_pola['rekonstrukcja'].get() == "Sinc":
+            self.etykieta_sinc.grid()
+            self.parametry_konwersji_pola['sinc_n'].grid()
+        else:
+            self.etykieta_sinc.grid_remove()
+            self.parametry_konwersji_pola['sinc_n'].grid_remove()
 
     def wykonaj_konwersje(self):
         if not self.sygnal_glowny:

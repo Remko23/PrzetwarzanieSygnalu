@@ -11,7 +11,7 @@
 
 \setlength{\textheight}{21cm}
 
-\title{{\bf Zadanie nr 2 - Próbkowanie i kwantyzacja}\linebreak
+\title{{\bf Zadanie nr 2 - Próbkowanie, kwantyzacja i rekonstrukcja sygnału}\linebreak
 Cyfrowe Przetwarzanie Sygnałów}
 \author{Maciej Miazek 251589 \and Remigiusz Tomecki 251652}
 \date{16.04.2026 r.} % Zaktualizowana data wedle postępów
@@ -21,150 +21,175 @@ Cyfrowe Przetwarzanie Sygnałów}
 \thispagestyle{empty}
 \newpage
 \setcounter{page}{1}
+
 \section{Cel zadania}
-Celem zadania 2 było poszerzenie dotychczasowo opracowanej aplikacji z zadania 1 o bloki konwersji analogowo-cyfrowej (A/C) oraz cyfrowo-analogowej (C/A). Zaimplementowane zostały metody próbkowania równomiernego, operacje rzutowania ciągłych wartości sygnału (kwantyzacja) wraz z technikami ograniczania błędu, oraz narzędzia do rekonstrukcji dziedziny ciągłej z analizą wyliczonego błędu i miar korelacji z oryginałem.\\
+Celem ćwiczenia było zapoznanie się z praktycznymi aspektami procesu konwersji analogowo-cyfrowej (A/C) i cyfrowo-analogowej (C/A) sygnałów. Zadanie polegało na poszerzeniu opracowanej aplikacji o nowe funkcjonalności: próbkowanie, kwantyzacja oraz rekonstrukcja sygnału. W celu obiektywnej oceny skutków konwersji, zdefiniowane zostały odpowiednie miary podobieństwa sygnałów.
 
 \section{Wstęp teoretyczny}
+
 \subsection{Próbkowanie}
+Proces próbkowania pozwala na zamianę wejściowego sygnału analogowego $f(t)$ na sygnał dyskretny $x(n) = f(nT_s)$, który jest reprezentowany jako ciąg próbek rozmieszczonych równomiernie w czasie w odstępach $T_s$. 
 
 \subsubsection*{Próbkowanie równomierne (S1)}
-Odtwarzanie dyskretnych wartości z ciągłego przebiegu analogowego. Proces przebiega z określoną częstotliwością $f_s$, która wyznacza nam okres próbkowania $T_s = \frac{1}{f_s}$. Otrzymane parametry zapisane są jako funkcja czasu w ciąg $x_n = x(n \cdot T_s)$. Kluczowym aspektem próbkowania jest zachowanie warunku określonego przez Twierdzenie Nyquista-Shannona ($f_s \ge 2f_{max}$).
+Twierdzenie o próbkowaniu określa możliwość poprawnego odtworzenia oryginalnego sygnału analogowego pod warunkiem, że częstotliwość próbkowania $f_s = \frac{1}{T_s}$ jest przynajmniej dwukrotnie wyższa niż najwyższa częstotliwość jakiejkolwiek składowej tego sygnału. Częstotliwość $\frac{f_s}{2}$ nosi nazwę częstotliwości Nyquista. Niespełnienie tego założenia (obecność składowych o częstotliwości większej od połowy częstotliwości próbkowania) prowadzi do zniekształceń znanych jako zjawisko aliasingu.
 
 \subsection{Kwantyzacja}
-Proces transformacji wartości próbkowanego sygnału z nieskończenie dokładnego podzbioru na z góry określoną, dyskretną i uwarunkowaną limitami pamięciowymi mapę poziomów. Koncepcja opiera się na przybliżaniu, narzucając nieliniowy szum zwany szumem kwantyzacji.
+Kwantyzacja to proces, w którym amplituda sygnału zostaje odwzorowana w skończony zbiór wartości, określanych jako poziomy kwantyzacji. Różnicę pomiędzy sąsiednimi wartościami w tym zbiorze nazywamy progiem kwantyzacji. W przypadku stosowania $b$-bitowej stałoprzecinkowej reprezentacji danych, liczba poziomów kwantyzacji wynosi zwykle $2^b$. Proces ten wprowadza błąd kwantyzacji, który można interpretować jako addytywny szum.
 
-\subsubsection*{Kwantyzacja równomierna z obcięciem (Q1)}
-Algorytm odrzucający całą resztę wektora błędu (np. stosując zaokrąglenie w dół logiką \texttt{floor}). Wprowadza on systematyczny, stały defekt, celowo zaniżając zawsze wartość rekonstruowaną bez oceny odchylenia błędu.
-
-\subsubsection*{Kwantyzacja równomierna z zaokrąglaniem (Q2)}
-Matematyczne dopasowywanie (np. w standardzie logicznym \texttt{round}) zrekonstruowanej wartości do szczebla oddalonego na mapie bitowej o najkrótszy wektor błędu bezwzględnego. Wymusza centryzację błędu wokół naturalnej linii analogowej sygnału.
+\subsubsection*{Kwantyzacja równomierna z obcięciem (Q1) i zaokrąglaniem (Q2)}
+Jeśli próg kwantyzacji jest stały, mówimy o kwantyzacji równomiernej. Operacja ta w praktyce może być rozumiana i realizowana algorytmicznie na dwa sposoby: jako obcinanie danych lub ich zaokrąglanie do najbliższego poziomu. 
 
 \subsection{Rekonstrukcja sygnału}
-Kolejny krok toru przetwarzania, stanowiący odpowiedź konwerterów C/A - proces powrotu przebiegów dyskretnych przed oczy słuchacza do postaci ciągłej.
+Metody konwersji cyfrowo-analogowej (C/A) pozwalające na powrót sygnału dyskretnego do postaci ciągłej.
 
 \subsubsection*{Ekstrapolacja zerowego rzędu (ZOH - R1)}
-Najprostsza metoda pamięci stałej. Ustawienie analogowego woltażu na stałym poziomie (zamrożenie stanu) i utrzymanie go do momentu odebrania nowej próbki, przez co fizyczny kształt obrazuje typową krzywą trzymaną, czyli potocznie tzw. "schodki".
+Najprostsza metoda rekonstrukcji, w której wartość próbki jest pamiętana i definiuje stałą wartość sygnału wyjściowego aż do nadejścia kolejnej próbki. Zastosowanie tej metody wywołuje wizualny efekt „schodków” i w praktyce wymaga użycia znacznie wyższej częstotliwości próbkowania, niż wynikałoby to z samego twierdzenia o próbkowaniu.
 
 \subsubsection*{Interpolacja pierwszego rzędu (FOH - R2)}
-Model operujący na zasadach ekstrapolatora wykorzystującego matematyczny styk obu sąsiadujących, bieżących próbek, wymuszający proste liniowe połączenie starych i nowych punktów po przekąsek.
+Metoda dająca lepsze rezultaty niż ZOH, polegająca na tym, że wartości sygnału pomiędzy sąsiednimi próbkami są interpolowane za pomocą odcinków prostej.
 
 \subsubsection*{Rekonstrukcja w oparciu o funkcję sinc (R3)}
-Ideałem w rozumieniu warunku Nyquista. Sinc to interpolacyjna funkcja idealnego odtwarzającego filtru dolnoprzepustowego wygładzającego strome oploty, dająca gładkie krzywe po wyjściu z bufora: $sinc(x) = \frac{\sin(\pi x)}{\pi x}$.
+Metoda umożliwiająca teoretycznie dowolnie dokładne odtworzenie sygnału analogowego z wykorzystaniem wzoru interpolacyjnego:
+\begin{equation}
+	x(t) = \sum_{n=-\infty}^{\infty} x(nT_s) \text{sinc}(t/T_s - n)
+\end{equation}
+Znormalizowana funkcja $\text{sinc}$ zdefiniowana jest następująco:
+\begin{equation}
+	\text{sinc}(t) = 
+	\begin{cases} 
+		\frac{\sin(\pi t)}{\pi t} & \text{dla } t \neq 0 \\ 
+		1 & \text{dla } t = 0 
+	\end{cases}
+\end{equation}
 
 \subsection{Miary podobieństwa}
-Obliczenia parametrów pozwalają nam jednoznacznie i obiektywnie ustalić utratę informacji po operacjach przetworników.
+Miary te służą do obiektywnej oceny skutków próbkowania oraz kwantyzacji poprzez porównanie sygnału przetwarzanego (oznaczanego jako $\hat{x}$) z sygnałem oryginalnym $x$.
 
 \subsubsection*{Błąd średniokwadratowy (MSE - C1)}
-MSE to potężna metryka oceny utraconej informacji (mocy sygnału kwantyzacji ubocznej): 
-$$MSE = \frac{1}{N} \sum (x_{oryg} - x_{ZOH})^2$$
+Wyraża moc średnią sygnału różnicowego, interpretowanego jako szum powstały w wyniku konwersji:
+\begin{equation}
+	MSE = \frac{1}{N} \sum_{i=0}^{N-1} [x(i) - \hat{x}(i)]^2
+\end{equation}
 
-\subsubsection*{Stosunek sygnał-szum (SNR - C2)}
-Oparty na skali logarytmicznej wskaźnik uwydatniania informacji ukrytej - im wyższy parametr (w dB), tym lepiej ukryty jest szum względem zregenerowanego sygnału:
-$$SNR = 10 \cdot \log_{10} \frac{\sum x_{oryg}^2}{MSE}$$
+\subsubsection*{Stosunek sygnał-szum (SNR - C2) oraz ENOB}
+Logarytmiczna miara stosunku mocy sygnału użytecznego do mocy szumu:
+\begin{equation}
+	SNR_{dB} = 10 \log_{10} \left( \frac{\sum_{i=0}^{N-1} x^2(i)}{\sum_{i=0}^{N-1} [x(i) - \hat{x}(i)]^2} \right)
+\end{equation}
+Na podstawie wartości SNR można wyznaczyć efektywną liczbę bitów (ENOB) rzeczywistego przetwornika, przekształcając teoretyczny wzór na maksymalny stosunek sygnał-szum:
+\begin{equation}
+	ENOB = \frac{SNR - 1.76}{6.02}
+\end{equation}
 
 \subsubsection*{Szczytowy stosunek sygnał-szum (PSNR - C3)}
-Wrażliwa definicja badająca graniczny rzut maksymalnego wychylenia odchylonego od miary zniekształcenia:
-$$PSNR = 10 \cdot \log_{10} \frac{MAX^2}{MSE}$$
+Wskaźnik odniesiony do maksymalnej wartości sygnału:
+\begin{equation}
+	PSNR_{dB} = 10 \log_{10} \left( \frac{\max_{i=0,\dots,N} x(i)}{MSE} \right)
+\end{equation}
 
-\subsubsection*{Maksymalna różnica (MD - C4) i ENOB}
-Miara określająca najwyższy pojedynczy uchwycony wektor dystansu szumu od uchybu naturalnej sinusoidy. Wyznacza się z niej po badaniu często również zastępczą liczbę działających bitów (ENOB: Effective Number Of Bits).
+\subsubsection*{Maksymalna różnica (MD - C4)}
+Metryka określająca największe bezwzględne odchylenie pojedynczej próbki zrekonstruowanej od oryginału:
+\begin{equation}
+	MD = \max_{i=0,1,\dots,N} |x(i) - \hat{x}(i)|
+\end{equation}
 
 
 \section{Opis implementacji}
-Aplikacja jest modularnie zintegrowana w Pythonie za pomocą \verb|Tkinter| ze sprawną biblioteką matematyczną \verb|Numpy| do odtwarzania buforów Sinc, z dodaną nową klasą z bloku konwersji \verb|KonwerterSygnalu|. Wynik przetwarzany jest asynchronicznie przez backendowe zaplecze układające podwójną osie (\textit{subplots}) za pomocą obiektowych metod \verb|FigureCanvasTkAgg|.
+Aplikacja została napisana w języku Python. W ramach realizacji zadania posługiwaliśmy się bibliotekami: \verb|Matplotlib| - do generowania wykresów, \verb|Numpy| - do operacji na wektorach, \verb|Tkinter| - do utworzenia graficznego interfejsu użytkownika oraz \verb|Struct| - do operowania plikami binarnymi. \\
+W programie wykorzystano wzorzec projektowy \verb|Metody Fabryki| oraz \verb|Generatora|.
+
+W ramach realizacji drugiego zadania, architektura aplikacji została znacząco rozbudowana o nowe moduły odpowiedzialne za konwersję analogowo-cyfrową (A/C) oraz cyfrowo-analogową (C/A) sygnałów:
+
+\begin{itemize}
+	\item \verb|Numpy| został intensywnie wykorzystany do realizacji operacji matematycznych na ciągach próbek, w tym do implementacji algorytmów kwantyzacji (operacje zaokrąglania i obcinania wartości do $2^b$ dyskretnych poziomów), złożonych obliczeń dla funkcji \textit{sinc} w procesie rekonstrukcji sygnału oraz do wyliczania miar podobieństwa.
+	\item \verb|Matplotlib| posłużył do wizualizacji skutków procesu próbkowania i kwantyzacji.
+	\item \verb|Tkinter| posłużył do rozszerzenia graficznego interfejsu użytkownika o nowe panele sterujące.
+\end{itemize}
 
 
 \section{Eksperymenty i wyniki}
-W części tej analizujemy różnicę między sygnałem bazowym, a sygnałem po przejściu procesów wygenerowanych przetwornikiem.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PODROZDZIAŁ PT. EKSPERYMENT NR 1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+W tej części przeanalizowano różnice między oryginalnym sygnałem ciągłym a sygnałem po przejściu przez procesy konwersji analogowo-cyfrowej (A/C) i cyfrowo-analogowej (C/A).
 
 \newpage
-\subsection{Wpływ częstotliwości próbkowania na rekonstrukcję w świetle Twierdzenia Nyquista}
-Celem tego eksperymentu jest zaobserwowanie wpływu parametru $f_{probkowania}$ na odzyskaną i interpolowaną wartość częstotliwościową. 
+\subsection{Wpływ częstotliwości próbkowania na jakość rekonstrukcji sygnału}
+Celem eksperymentu była ocena wpływu częstotliwości próbkowania $f_s$ na jakość zrekonstruowanego sygnału w odniesieniu do twierdzenia Nyquista-Shannona.
 
-\subsubsection{Założenia i Przebieg}
-Generujemy oryginalny sygnał na przykład Sinusoidalny, a następnie drastycznie zmniejszamy $f_{sample}$ wokół niebezpiecznych granic pasma Nyquista doprowadzając do aliasingu. Dokonujemy na wykresie rekonstrukcji idealnej typu $Sinc$ i analizujemy logikę powstałych "odbić" (tzw. \textit{aliasing}). Oczekuje się spadków \textbf{SNR}.
+\subsubsection{Założenia i przebieg}
+Sygnał testowy (sinusoidalny) poddano próbkowaniu ze stopniowo zmniejszaną częstotliwością $f_s$, przekraczając ostatecznie granicę określoną przez częstotliwość Nyquista. Następnie przeprowadzono rekonstrukcję sygnału z wykorzystaniem idealnej funkcji \textit{sinc}. Analizie poddano powstawanie pozornych składowych częstotliwościowych (zjawisko aliasingu) oraz spadek wartości miar podobieństwa, w szczególności parametru SNR.
 
-\subsubsection{Rezultat}
+\subsubsection{Rezultaty}
 \begin{table}[H]
-    \centering
-    \begin{tabular}{|c|c|c|c|c|}
-    \hline
-        \textbf{Częstotliwość próbkowania $f_{sample}$} & \textbf{1000 Hz} & \textbf{250 Hz} & \textbf{150 Hz} & \textbf{45 Hz} \\ \hline
-        Błąd średniokwadratowy (MSE) & 0.000000 & 0.000924 & 1.104151 & 1.054363 \\ \hline
-        Stosunek sygnał-szum (SNR) [dB] & 279.62 & 27.33 & -3.44 & -3.24 \\ \hline
-        Szczytowy SNR (PSNR) [dB] & 282.42 & 30.13 & -0.65 & -0.45 \\ \hline
-        Maksymalna Różnica (MD) & 0.000000 & 0.304146 & 1.938201 & 2.063781  \\ \hline
-    \end{tabular}
-    \caption{Tabela metryk błędu w zależności od zagęszczenia siatki Nyquista ($f_s$)}
+	\centering
+	\begin{tabular}{|c|c|c|c|c|}
+		\hline
+		\textbf{Częstotliwość próbkowania $f_s$} & \textbf{1000 Hz} & \textbf{250 Hz} & \textbf{150 Hz} & \textbf{45 Hz} \\ \hline
+		Błąd średniokwadratowy (MSE) & 0.000000 & 0.000924 & 1.104151 & 1.054363 \\ \hline
+		Stosunek sygnał-szum (SNR) [dB] & 279.62 & 27.33 & -3.44 & -3.24 \\ \hline
+		Szczytowy SNR (PSNR) [dB] & 282.42 & 30.13 & -0.65 & -0.45 \\ \hline
+		Maksymalna Różnica (MD) & 0.000000 & 0.304146 & 1.938201 & 2.063781  \\ \hline
+	\end{tabular}
+	\caption{Zestawienie miar błędu w zależności od częstotliwości próbkowania}
 \end{table}
 
 \begin{figure}[H]
-    \centering
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{ex1/fs1000.png}
-        \caption{Prawidłowe próbkowanie nadpróbkowaniem ($1000\text{Hz}$)}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{ex1/fs45.png}
-        \caption{Zjawisko pełnego Aliasingu ($45\text{Hz}$)}
-    \end{subfigure}
-    \caption{Wizualizacja utraty zjawiska okresowego w dziedzinie ciągłej przy Sinc}
+	\centering
+	\begin{subfigure}{0.48\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{ex1/fs1000.png}
+		\caption{Prawidłowa rekonstrukcja z nadpróbkowaniem ($1000\text{ Hz}$)}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.48\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{ex1/fs45.png}
+		\caption{Zjawisko aliasingu przy niedostatecznym próbkowaniu ($45\text{ Hz}$)}
+	\end{subfigure}
+	\caption{Wizualizacja skutków próbkowania z różnymi częstotliwościami przy rekonstrukcji funkcją sinc}
 \end{figure}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PODROZDZIAŁ PT. EKSPERYMENT NR 2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \newpage
-\subsection{Analiza wpływu rozmiaru bitowego na wielkość i zjawisko dystansu skwantowanego szumu}
-Celem tego eksperymentu była kwantyfikacja poziomu błędów po przejściu układów rejestru i ucięcia algorytmami floor/round.
+\subsection{Wpływ rozdzielczości bitowej przetwornika na poziom szumu kwantyzacji}
+Celem eksperymentu była ilościowa ocena błędów wprowadzanych przez proces kwantyzacji w zależności od dostępnej liczby poziomów dyskretnych.
 
-\subsubsection{Założenia i Przebieg}
-Bierzemy na warsztat klasyczny zestaw ciągły używając do niego kwantyzacji z Zaokrągleniem, badając poziomy i szczebelki w zależności od przypiętych bitów ($1, 2, 4 i 8 b$). Obserwujemy odczyty Effective Number Of Bits (ENOB)
+\subsubsection{Założenia i przebieg}
+Referencyjny sygnał ciągły poddano operacji kwantyzacji równomiernej z zaokrąglaniem (metoda Q2), testując system dla różnej rozdzielczości przetwornika (2, 4 oraz 8 bitów). Ocenie poddano parametry błędów ze szczególnym uwzględnieniem wyznaczonej eksperymentalnie efektywnej liczby bitów (ENOB).
 
-\subsubsection{Rezultat}
+\subsubsection{Rezultaty}
 \begin{table}[H]
-    \centering
-    \begin{tabular}{|c|c|c|c|}
-    \hline
-        \textbf{Zadeklarowane Bity} & \textbf{SNR [dB]} & \textbf{Wyliczony ENOB [bit]} & \textbf{Wyliczone MD} \\ \hline
-        \textbf{2} & 12.21 & 1.7354 & 3.333333 \\ \hline
-        \textbf{4} & 25.66 & 3.9703 & 0.666667 \\ \hline
-        \textbf{8} & 49.95 & 8.0056 & 0.039216 \\ \hline
-    \end{tabular}
-    \caption{Odchylenia systemu ucinania w zależności od rozdzielczości rejestru zadanego przez użytkownika}
+	\centering
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		\textbf{Rozdzielczość [bity]} & \textbf{SNR [dB]} & \textbf{Wyliczony ENOB [bit]} & \textbf{Wyliczone MD} \\ \hline
+		\textbf{2} & 12.21 & 1.7354 & 3.333333 \\ \hline
+		\textbf{4} & 25.66 & 3.9703 & 0.666667 \\ \hline
+		\textbf{8} & 49.95 & 8.0056 & 0.039216 \\ \hline
+	\end{tabular}
+	\caption{Wartości miar błędów kwantyzacji w zależności od rozdzielczości bitowej przetwornika}
 \end{table}
 
 \begin{figure}[H]
-    \centering
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{ex2/b2.png}
-        \caption{Kwantyzacja: 2 bity}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{ex2/b8.png}
-        \caption{Kwantyzacja: 8 bitów}
-    \end{subfigure}
-    \caption{Wizualizacja ograniczenia rozdzielczości pionowej kwantyzatora na wykresach}
+	\centering
+	\begin{subfigure}{0.48\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{ex2/b2.png}
+		\caption{Kwantyzacja: 2 bity}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}{0.48\textwidth}
+		\centering
+		\includegraphics[width=\linewidth]{ex2/b8.png}
+		\caption{Kwantyzacja: 8 bitów}
+	\end{subfigure}
+	\caption{Wizualizacja ograniczonej rozdzielczości pionowej kwantyzatora}
 \end{figure}
 
-Z powyższej tabeli oraz badanych przebiegów w oknie histogramów można wyraźnie potwierdzić powiązanie matematyki kwantyzacji - szum rośnie nieliniowo proporcjonalnie do wykładniczych bloków bitowych, pozostawiając mniejsze logarytmiczne SNRy.
+Uzyskane wyniki potwierdzają teoretyczne właściwości szumu kwantyzacji. Zwiększenie rozdzielczości bitowej przetwornika powoduje wykładniczy wzrost liczby dostępnych poziomów, co bezpośrednio przekłada się na redukcję błędu (MD) oraz logarytmiczny wzrost parametru stosunku sygnału do szumu (SNR).
 
-
-\newpage
 \section{Wnioski}
-Twierdzenie Kotielnikowa-Shannona w istocie określa minimalną barierę przejścia dziedziny C/A – sprowadzenie poziomu próbkowania poniżej zadeklarowanych $2f_{max}$ zawsze prowadziło do bezpowrotnej utraty bazy fizycznej przebiegów po nałożeniu rekonstrukcji na oś X.\\
-Sklasyfikowaliśmy wyższość interpolacji pierwszego rzędu względem brutalnego blokowania ekstrapolacją ZOH, aczkolwiek pełen obiektyw zapewniła niefizyczna bariera rekonstrukcji Sinc, minimalizująca średniobłąd (MD) do zupełnych minimów pomijając tylko asymetrycznie niefortunne krawędzie buforów ramki aplikacyjnej.\\
-System \texttt{KonwerterSygnalu} sprawdził się idealnie w demonstracji jak dużą zawiłość wyznacza obiektywne szacowanie sygnału do szumu (SNR, PSNR i ENOB).
+Przeprowadzone eksperymenty praktycznie weryfikują działanie twierdzenia o próbkowaniu. Zmniejszenie częstotliwości próbkowania poniżej wartości $2f_{max}$ zawsze prowadziło do zjawiska aliasingu i bezpowrotnej utraty informacji o pierwotnym kształcie sygnału, co uniemożliwiało jego poprawną rekonstrukcję za pomocą idealnej funkcji \textit{sinc}. Eksperyment ukazał również wysoką skuteczność samej metody \textit{sinc}, która dla prawidłowo spróbkowanego sygnału zredukowała błąd średniokwadratowy (MSE) do poziomu bliskiego zeru.
+
+Analiza procesu kwantyzacji potwierdziła teoretyczne właściwości szumu wprowadzanego przez przetwornik A/C. Zwiększenie rozdzielczości bitowej przetwornika powoduje wykładniczy wzrost liczby dostępnych poziomów, co bezpośrednio przekłada się na redukcję błędu maksymalnego (MD) oraz logarytmiczny wzrost parametru stosunku sygnału do szumu (SNR).
+
+Zaimplementowana aplikacja analityczna okazała się skutecznym narzędziem do weryfikacji teoretycznych właściwości procesu konwersji sygnałów. Pozwoliła na obiektywną ocenę wprowadzanych zniekształceń przy użyciu precyzyjnych metryk, udowadniając bezpośrednią zależność między parametrami sprzętowymi (częstotliwość próbkowania, rozdzielczość bitowa) a jakością sygnału cyfrowego.
 
 \end{document}
