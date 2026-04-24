@@ -8,6 +8,8 @@ from PlikSygnalu import PlikSygnalu
 from WizualizatorSygnalu import WizualizatorSygnalu
 from KonwerterSygnalu import KonwerterSygnalu
 from FiltrSygnalu import FiltrSygnalu
+from CzujnikOdleglosci import CzujnikOdleglosci
+import matplotlib.pyplot as plt
 
 class Aplikacja(tk.Tk):
     def __init__(self):
@@ -103,6 +105,9 @@ class Aplikacja(tk.Tk):
         zakladka_filtracja = ttk.Frame(self.zakladki_lewe)
         self.zakladki_lewe.add(zakladka_filtracja, text="Filtrowanie")
 
+        zakladka_odleglosc = ttk.Frame(self.zakladki_lewe)
+        self.zakladki_lewe.add(zakladka_odleglosc, text="Pomiar odległości")
+
         ramka_generacji_1 = ttk.LabelFrame(zakladka_generacja, text="Generacja Sygnału Głównego", padding="10")
         ramka_generacji_1.pack(fill=tk.X, pady=5)
 
@@ -183,6 +188,69 @@ class Aplikacja(tk.Tk):
 
         self.przycisk_filtruj = ttk.Button(ramka_filtracji, text="Filtruj Główny Sygnał", command=self.filtruj_sygnal)
         self.przycisk_filtruj.grid(row=3, column=0, columnspan=4, pady=5)
+
+        # --- ZAKŁADKA POMIAR ODLEGŁOŚCI ---
+        ramka_srodowisko = ttk.LabelFrame(zakladka_odleglosc, text="Parametry środowiska i obiektu", padding="10")
+        ramka_srodowisko.pack(fill=tk.X, pady=5)
+        
+        ttk.Label(ramka_srodowisko, text="Krok czasu sym. dt:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.pole_dt_sim = ttk.Entry(ramka_srodowisko, width=10)
+        self.pole_dt_sim.insert(0, "0.001")
+        self.pole_dt_sim.grid(row=0, column=1, sticky=tk.W, pady=2)
+        
+        ttk.Label(ramka_srodowisko, text="Prędkość obiektu v:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.pole_v_ob = ttk.Entry(ramka_srodowisko, width=10)
+        self.pole_v_ob.insert(0, "15.0")
+        self.pole_v_ob.grid(row=1, column=1, sticky=tk.W, pady=2)
+        
+        ttk.Label(ramka_srodowisko, text="Pocz. odległość d0:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        self.pole_d0 = ttk.Entry(ramka_srodowisko, width=10)
+        self.pole_d0.insert(0, "100.0")
+        self.pole_d0.grid(row=2, column=1, sticky=tk.W, pady=2)
+        
+        ttk.Label(ramka_srodowisko, text="Prędkość sygnału c:").grid(row=3, column=0, sticky=tk.W, pady=2)
+        self.pole_c_osr = ttk.Entry(ramka_srodowisko, width=10)
+        self.pole_c_osr.insert(0, "300.0")
+        self.pole_c_osr.grid(row=3, column=1, sticky=tk.W, pady=2)
+
+        ramka_radar = ttk.LabelFrame(zakladka_odleglosc, text="Parametry radaru (czujnika)", padding="10")
+        ramka_radar.pack(fill=tk.X, pady=5)
+
+        ttk.Label(ramka_radar, text="Okres syg. sond. T:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.pole_T_syg = ttk.Entry(ramka_radar, width=10)
+        self.pole_T_syg.insert(0, "1.0")
+        self.pole_T_syg.grid(row=0, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_radar, text="Częst. próbkowania fp:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.pole_fp_rad = ttk.Entry(ramka_radar, width=10)
+        self.pole_fp_rad.insert(0, "1000.0")
+        self.pole_fp_rad.grid(row=1, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_radar, text="Długość bufora N:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        self.pole_N_buf = ttk.Entry(ramka_radar, width=10)
+        self.pole_N_buf.insert(0, "2000")
+        self.pole_N_buf.grid(row=2, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_radar, text="Okres raportowania:").grid(row=3, column=0, sticky=tk.W, pady=2)
+        self.pole_T_rep = ttk.Entry(ramka_radar, width=10)
+        self.pole_T_rep.insert(0, "0.5")
+        self.pole_T_rep.grid(row=3, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_radar, text="Metoda korelacji:").grid(row=4, column=0, sticky=tk.W, pady=2)
+        self.wybor_korelacji = ttk.Combobox(ramka_radar, values=["splot", "bezposrednia"], state="readonly", width=12)
+        self.wybor_korelacji.current(0)
+        self.wybor_korelacji.grid(row=4, column=1, sticky=tk.W, pady=2)
+
+        ramka_symulacja = ttk.Frame(zakladka_odleglosc)
+        ramka_symulacja.pack(fill=tk.X, pady=10)
+        
+        ttk.Label(ramka_symulacja, text="Czas całk. symulacji:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.pole_czas_calk = ttk.Entry(ramka_symulacja, width=10)
+        self.pole_czas_calk.insert(0, "5.0")
+        self.pole_czas_calk.grid(row=0, column=1, sticky=tk.W, pady=2)
+        
+        self.przycisk_symuluj_odleglosc = ttk.Button(ramka_symulacja, text="Symuluj Pomiar", command=self.symuluj_odleglosc)
+        self.przycisk_symuluj_odleglosc.grid(row=1, column=0, columnspan=2, pady=10)
 
         ramka_akcji = ttk.LabelFrame(lewa_ramka, text="Akcje na Głównym Sygnale i Logi", padding="10")
         ramka_akcji.pack(fill=tk.X, pady=5)
@@ -672,4 +740,60 @@ class Aplikacja(tk.Tk):
             
         except Exception as e:
             messagebox.showerror("Błąd filtracji", str(e))
+
+    def symuluj_odleglosc(self):
+        try:
+            dt_sim = float(self.pole_dt_sim.get())
+            v_ob = float(self.pole_v_ob.get())
+            d0 = float(self.pole_d0.get())
+            c_osr = float(self.pole_c_osr.get())
+            
+            T_syg = float(self.pole_T_syg.get())
+            fp = float(self.pole_fp_rad.get())
+            N_buf = int(self.pole_N_buf.get())
+            T_rep = float(self.pole_T_rep.get())
+            korelacja_typ = self.wybor_korelacji.get()
+            
+            czas_calkowity = float(self.pole_czas_calk.get())
+            
+            czujnik = CzujnikOdleglosci(dt_sim, v_ob, d0, c_osr, T_syg, fp, N_buf, T_rep, korelacja_typ)
+            
+            self.loguj_wiadomosc("Rozpoczynam symulację czujnika odległości (może to chwilę potrwać)...")
+            # Force UI update
+            self.update_idletasks()
+            
+            czasy, rz_d, zm_d = czujnik.symuluj(czas_calkowity)
+            self.loguj_wiadomosc("Symulacja zakończona. Wyświetlam wyniki.")
+            
+            for tab_id in self.notatnik_wizualizacji.tabs():
+                if self.notatnik_wizualizacji.tab(tab_id, "text") == "Wyniki Radaru":
+                    self.notatnik_wizualizacji.forget(tab_id)
+                    
+            ramka_wynikow = ttk.Frame(self.notatnik_wizualizacji)
+            self.notatnik_wizualizacji.add(ramka_wynikow, text="Wyniki Radaru")
+            self.notatnik_wizualizacji.select(ramka_wynikow)
+            
+            fig = plt.Figure(figsize=(8, 5))
+            ax = fig.add_subplot(111)
+            ax.plot(czasy, rz_d, label='Rzeczywista odległość', color='blue', linewidth=2)
+            
+            ax.step(czasy, zm_d, where='post', label='Zmierzone przez radar', color='red', linestyle='--', linewidth=2)
+            
+            ax.set_title("Symulacja czujnika odległości")
+            ax.set_xlabel("Czas [s]")
+            ax.set_ylabel("Odległość [m]")
+            ax.legend()
+            ax.grid(True)
+            
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+            plotno = FigureCanvasTkAgg(fig, master=ramka_wynikow)
+            plotno.draw()
+            plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka_wynikow)
+            pasek_narzedzi.update()
+            plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            
+        except Exception as e:
+            messagebox.showerror("Błąd symulacji", str(e))
 

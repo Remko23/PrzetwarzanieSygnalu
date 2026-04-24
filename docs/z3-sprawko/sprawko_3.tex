@@ -1,0 +1,72 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[T1]{polski}
+\usepackage[utf8]{inputenc}
+\newcommand{\BibTeX}{{\sc Bib}\TeX} 
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{subcaption}
+
+\setlength{\textheight}{21cm}
+
+\title{{\bf Zadanie nr 3 - Splot, filtracja i korelacja sygnałów}\linebreak
+Cyfrowe Przetwarzanie Sygnałów}
+\author{Maciej Miazek 251589 \and Remigiusz Tomecki 251652}
+\date{14.05.2026 r.} 
+
+\begin{document}
+\clearpage\maketitle
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+\section{Cel zadania}
+Celem niniejszego zadania było zapoznanie się z fundamentalnymi operacjami cyfrowego przetwarzania sygnałów: splotem dyskretnym oraz korelacją wzajemną. Ważnym elementem ćwiczenia było praktyczne wykorzystanie twierdzenia o splocie do projektowania filtrów o skończonej odpowiedzi impulsowej (SOI) metodą okien oraz przeprowadzenie symulacji korelacyjnego czujnika odległości.
+
+\section{Wstęp teoretyczny}
+Podstawową operacją wykorzystywaną w filtracji cyfrowej jest splot dyskretny dwóch sygnałów $h$ oraz $x$, zdefiniowany wzorem:
+\begin{equation}
+(h*x)(n) = \sum_{k=0}^{M-1} h(k)x(n-k)
+\end{equation}
+W procesie projektowania filtrów metodą okien, idealna (nieskończona) odpowiedź impulsowa filtru dolnoprzepustowego jest mnożona przez funkcję okna $w(n)$, co pozwala na uzyskanie skończonej liczby współczynników $M$. Zastosowanie okien innych niż prostokątne (np. Hamminga, Hanninga, Blackmana) pozwala na redukcję tętnień w paśmie przepustowym i zwiększenie tłumienia w paśmie zaporowym.
+
+Korelacja wzajemna sygnałów $R_{hx}$ służy do wyznaczania podobieństwa między sygnałami i jest kluczowa w systemach radarowych do wyznaczania opóźnienia czasowego sygnału zwrotnego, co pozwala na obliczenie odległości $d$:
+\begin{equation}
+d = \frac{V \cdot t}{2}
+\end{equation}
+gdzie $V$ to prędkość rozchodzenia się fali, a $t$ to czas wyznaczony na podstawie przesunięcia maksimum funkcji korelacji.
+
+\section{Opis implementacji}
+Aplikacja została napisana w języku Python. W ramach realizacji zadania posługiwaliśmy się bibliotekami: \verb|Matplotlib| - do generowania wykresów, \verb|Numpy| - do operacji na wektorach oraz \verb|Tkinter| - do utworzenia interfejsu użytkownika.
+
+Główna logika filtracji została zawarta w klasie \verb|FiltrSygnalu|:
+\begin{itemize}
+    \item \textbf{Metoda \texttt{splot(h, x)}}: Realizuje bezpośrednią implementację wzoru na splot dyskretny przy pomocy zagnieżdżonych pętli, co pozwala na przetwarzanie sygnałów o dowolnej długości.
+    \item \textbf{Projektowanie filtrów}: Zaimplementowano funkcje generujące filtry dolno-, górno- i środkowoprzepustowe. Wykorzystano technikę modulacji (mnożenie przez $(-1)^n$ dla filtrów górnoprzepustowych oraz przez $2\sin(\pi n/2)$ dla środkowoprzepustowych).
+    \item \textbf{Funkcje okien}: Zaimplementowano okna: prostokątne, Hamminga, Hanninga oraz Blackmana zgodnie ze wzorami (5-7) z instrukcji.
+\end{itemize}
+
+\section{Eksperymenty i wyniki}
+
+\subsection{Eksperyment 1: Charakterystyki filtrów SOI}
+\subsubsection{Założenia i przebieg}
+Przeprowadzono analizę wpływu rzędu filtru $M$ oraz rodzaju zastosowanego okna na charakterystykę amplitudową filtru dolnoprzepustowego o częstotliwości odcięcia $f_0 = f_p / 8$.
+
+\subsubsection{Rezultaty}
+Zgodnie z przewidywaniami teoretycznymi, zwiększenie rzędu filtru $M$ spowodowało zwężenie pasma przejściowego. Zastosowanie okna Blackmana w porównaniu do prostokątnego znacząco zredukowało oscylacje w pasmie zaporowym (tętnienia), kosztem nieznacznego poszerzenia pasma przejściowego.
+
+\subsection{Eksperyment 2: Korelacyjny czujnik odległości}
+\subsubsection{Założenia i przebieg}
+Zasymulowano działanie radaru wysyłającego sygnał okresowy. Sygnał zwrotny został opóźniony o zadaną liczbę próbek, co odpowiadało określonej odległości obiektu.
+
+\subsubsection{Rezultaty}
+Wyznaczenie maksimum funkcji korelacji wzajemnej pozwoliło na precyzyjne określenie opóźnienia sygnału. Dla sygnału opóźnionego o 50 próbek przy znanej częstotliwości próbkowania, algorytm poprawnie wyliczył dystans, co potwierdza skuteczność metody korelacyjnej w pomiarach odległości.
+
+\section{Wnioski}
+1. Operacja splotu jest kluczowa dla filtracji sygnałów w dziedzinie czasu. Jej złożoność obliczeniowa $O(NM)$ sugeruje stosowanie zoptymalizowanych bibliotek (jak \texttt{numpy.convolve}) w rozwiązaniach komercyjnych, jednak implementacja bezpośrednia pozwala najlepiej zrozumieć mechanizm działania.
+2. Wybór funkcji okna stanowi kompromis między szerokością pasma przejściowego a tłumieniem w pasmie zaporowym. Okno Blackmana oferuje najlepsze tłumienie, co jest pożądane w precyzyjnej filtracji.
+3. Analiza korelacyjna jest potężnym narzędziem do detekcji sygnałów w szumie i wyznaczania przesunięć czasowych, co znajduje bezpośrednie zastosowanie w systemach radiolokacyjnych.
+
+\end{document}
