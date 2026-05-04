@@ -14,11 +14,14 @@ class CzujnikOdleglosci:
         self.korelacja_typ = korelacja_typ
         
     def _sygnal_sondujacy(self, t):
-        # Konfiguracja sygnału: suma dwóch sinusów o różnych częstotliwościach
-        # Spełnia to wymóg konstrukcji z przynajmniej dwóch podstawowych sygnałów okresowych
+        # Konfiguracja sygnału: suma trzech sinusów o różnych częstotliwościach
+        # f1: częstotliwość podstawowa (1/T_syg)
+        # f2: trzecia harmoniczna (3/T_syg) z amplitudą 0.4
+        # f3: piąta harmoniczna (5/T_syg) z amplitudą 0.2
         f1 = 1.0 / self.T_syg
-        f2 = 2.0 / self.T_syg
-        return np.sin(2 * np.pi * f1 * t) + 0.5 * np.sin(2 * np.pi * f2 * t)
+        f2 = 3.0 / self.T_syg
+        f3 = 5.0 / self.T_syg
+        return np.sin(2 * np.pi * f1 * t) + 0.4 * np.sin(2 * np.pi * f2 * t) + 0.2 * np.sin(2 * np.pi * f3 * t)
 
     def symuluj(self, czas_calkowity):
         czasy_raportu = []
@@ -95,4 +98,4 @@ class CzujnikOdleglosci:
                 
                 czas_nastepnego_raportu += self.T_rep
                 
-        return czasy_raportu, rzeczywiste_d, zmierzone_d
+        return czasy_raportu, rzeczywiste_d, zmierzone_d, buf_wyslany, buf_odebrany, korelacja, t

@@ -21,7 +21,7 @@ class FiltrSygnalu:
         return 0.42 - 0.5 * np.cos(2 * np.pi * n / M) + 0.08 * np.cos(4 * np.pi * n / M)
 
     @staticmethod
-    def generuj_filtr_dolnoprzepustowy(M, K, okno='prostokatne'):
+    def generuj_filtr_dolnoprzepustowy(M, K, okno='Hamming'):
         h = np.zeros(M)
         srodek = (M - 1) / 2.0
         
@@ -31,28 +31,24 @@ class FiltrSygnalu:
             else:
                 h[i] = np.sin(2 * np.pi * (i - srodek) / K) / (np.pi * (i - srodek))
                 
-        if okno == 'hamming':
+        if okno == 'Prostokątne':
+            w = FiltrSygnalu.okno_prostokatne(M)
+        elif okno == 'Hamming':
             w = FiltrSygnalu.okno_hamminga(M)
-        elif okno == 'hanning':
+        elif okno == 'Hanning':
             w = FiltrSygnalu.okno_hanninga(M)
-        elif okno == 'blackman':
+        elif okno == 'Blackman':
             w = FiltrSygnalu.okno_blackmana(M)
         else:
-            w = FiltrSygnalu.okno_prostokatne(M)
+            w = FiltrSygnalu.okno_hamminga(M)
             
         return h * w
 
     @staticmethod
-    def generuj_filtr_gornoprzepustowy(M, K, okno='prostokatne'):
+    def generuj_filtr_gornoprzepustowy(M, K, okno='Hamming'):
         h_lp = FiltrSygnalu.generuj_filtr_dolnoprzepustowy(M, K, okno)
         n = np.arange(M)
         return h_lp * ((-1) ** n)
-
-    @staticmethod
-    def generuj_filtr_srodkowoprzepustowy(M, K, okno='prostokatne'):
-        h_lp = FiltrSygnalu.generuj_filtr_dolnoprzepustowy(M, K, okno)
-        n = np.arange(M)
-        return h_lp * 2.0 * np.sin(np.pi * n / 2.0)
 
     @staticmethod
     def splot(h, x):

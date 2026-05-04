@@ -167,12 +167,12 @@ class Aplikacja(tk.Tk):
         ramka_filtracji.pack(fill=tk.X, pady=5)
         
         ttk.Label(ramka_filtracji, text="Rodzaj filtru:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.wybor_filtru = ttk.Combobox(ramka_filtracji, values=["Dolnoprzepustowy", "Górnoprzepustowy", "Środkowoprzepustowy"], state="readonly", width=20)
+        self.wybor_filtru = ttk.Combobox(ramka_filtracji, values=["Dolnoprzepustowy", "Górnoprzepustowy"], state="readonly", width=20)
         self.wybor_filtru.current(0)
         self.wybor_filtru.grid(row=0, column=1, sticky=tk.W, pady=2, columnspan=3)
 
         ttk.Label(ramka_filtracji, text="Okno:").grid(row=1, column=0, sticky=tk.W, pady=2)
-        self.wybor_okna = ttk.Combobox(ramka_filtracji, values=["prostokatne", "hamming", "hanning", "blackman"], state="readonly", width=20)
+        self.wybor_okna = ttk.Combobox(ramka_filtracji, values=["Prostokątne", "Hamming", "Hanning", "Blackman"], state="readonly", width=20)
         self.wybor_okna.current(0)
         self.wybor_okna.grid(row=1, column=1, sticky=tk.W, pady=2, columnspan=3)
 
@@ -719,14 +719,18 @@ class Aplikacja(tk.Tk):
             okno = self.wybor_okna.get()
             
             fp = self.sygnal_glowny.czestotliwosc_probkowania
-            K = fp / fo
             
             if rodzaj_filtru == "Dolnoprzepustowy":
+                K = fp / fo
                 h = FiltrSygnalu.generuj_filtr_dolnoprzepustowy(M, K, okno)
             elif rodzaj_filtru == "Górnoprzepustowy":
+                prawdziwe_fo = (fp / 2.0) - fo
+                if prawdziwe_fo <= 0:
+                    raise ValueError("Częstotliwość odcięcia filtru górnoprzepustowego musi być ostro mniejsza od częstotliwości Nyquista (fp/2)!")
+                if prawdziwe_fo >= (fp / 2.0):
+                    raise ValueError("Częstotliwość odcięcia musi być większa od zera!")
+                K = fp / prawdziwe_fo
                 h = FiltrSygnalu.generuj_filtr_gornoprzepustowy(M, K, okno)
-            elif rodzaj_filtru == "Środkowoprzepustowy":
-                h = FiltrSygnalu.generuj_filtr_srodkowoprzepustowy(M, K, okno)
                 
             liczba_probek = int(self.pole_liczba_probek.get())
             self.sygnal_glowny.resetuj()
@@ -758,42 +762,92 @@ class Aplikacja(tk.Tk):
             
             czujnik = CzujnikOdleglosci(dt_sim, v_ob, d0, c_osr, T_syg, fp, N_buf, T_rep, korelacja_typ)
             
-            self.loguj_wiadomosc("Rozpoczynam symulację czujnika odległości (może to chwilę potrwać)...")
-            # Force UI update
-            self.update_idletasks()
-            
-            czasy, rz_d, zm_d = czujnik.symuluj(czas_calkowity)
+            czasy, rz_d, zm_d, buf_wyslany, buf_odebrany, korelacja, t_koniec = czujnik.symuluj(czas_calkowity)
             self.loguj_wiadomosc("Symulacja zakończona. Wyświetlam wyniki.")
             
             for tab_id in self.notatnik_wizualizacji.tabs():
-                if self.notatnik_wizualizacji.tab(tab_id, "text") == "Wyniki Radaru":
+                if self.notatnik_wizualizacji.tab(tab_id, "text") in ["Wyniki Radaru", "Statystyki Radaru"]:
                     self.notatnik_wizualizacji.forget(tab_id)
                     
             ramka_wynikow = ttk.Frame(self.notatnik_wizualizacji)
             self.notatnik_wizualizacji.add(ramka_wynikow, text="Wyniki Radaru")
             self.notatnik_wizualizacji.select(ramka_wynikow)
             
-            fig = plt.Figure(figsize=(8, 5))
-            ax = fig.add_subplot(111)
-            ax.plot(czasy, rz_d, label='Rzeczywista odległość', color='blue', linewidth=2)
+            fig = plt.Figure(figsize=(8, 8), facecolor='#2b2b2b')
+            ax1 = fig.add_subplot(311)
+            ax2 = fig.add_subplot(312)
+            ax3 = fig.add_subplot(313)
             
-            ax.step(czasy, zm_d, where='post', label='Zmierzone przez radar', color='red', linestyle='--', linewidth=2)
+            fp = float(self.pole_fp_rad.get())
+            N = int(self.pole_N_buf.get())
+            t_buf = np.linspace(t_koniec - N/fp, t_koniec, N)
             
-            ax.set_title("Symulacja czujnika odległości")
-            ax.set_xlabel("Czas [s]")
-            ax.set_ylabel("Odległość [m]")
-            ax.legend()
-            ax.grid(True)
+            ax1.plot(t_buf, buf_wyslany, color='cyan', linewidth=2)
+            ax1.set_title("Sygnał Sondujący", color='white')
+            
+            ax2.plot(t_buf, buf_odebrany, color='cyan', linewidth=2)
+            ax2.set_title("Sygnał Powrotny", color='white')
+            
+            t_kor = np.linspace(t_koniec - (2*N-1)/fp, t_koniec, 2*N-1)
+            ax3.plot(t_kor, korelacja, color='cyan', linewidth=2)
+            ax3.set_title("Korelacja Sygnałów Sondującego oraz Powrotnego", color='white')
+            
+            for ax in [ax1, ax2, ax3]:
+                ax.set_facecolor('#2b2b2b')
+                ax.tick_params(colors='white')
+                ax.grid(True, linestyle='--', color='lightgray', alpha=0.5)
+                for spine in ax.spines.values():
+                    spine.set_color('gray')
+            
+            fig.tight_layout()
             
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
             plotno = FigureCanvasTkAgg(fig, master=ramka_wynikow)
             plotno.draw()
             plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            
+            # --- ZAKŁADKA STATYSTYK RADARU ---
+            ramka_stat = ttk.Frame(self.notatnik_wizualizacji)
+            self.notatnik_wizualizacji.add(ramka_stat, text="Statystyki Radaru")
+            
+            kontener = tk.Frame(ramka_stat, bg="#2b2b2b", padx=40, pady=30)
+            kontener.pack(fill=tk.BOTH, expand=True)
+            tk.Label(kontener, text="Statystyki Pomiaru Odległości", font=("Arial", 16, "bold"),
+                     bg="#2b2b2b", fg="#ffffff").pack(anchor=tk.W, pady=(0, 5))
 
-            pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka_wynikow)
-            pasek_narzedzi.update()
-            plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+            rz_d_arr = np.array(rz_d)
+            zm_d_arr = np.array(zm_d)
+            bledy = rz_d_arr - zm_d_arr
+            bledy_bezwzgledne = np.abs(bledy)
+            
+            sredni_blad = np.mean(bledy_bezwzgledne) if len(bledy_bezwzgledne) > 0 else 0
+            max_blad = np.max(bledy_bezwzgledne) if len(bledy_bezwzgledne) > 0 else 0
+            rms_blad = np.sqrt(np.mean(bledy**2)) if len(bledy) > 0 else 0
+            
+            c = float(self.pole_c_osr.get())
+            rozdzielczosc = c / (2.0 * fp)
+
+            tk.Label(kontener,
+                     text=f"Liczba pomiarów: {len(rz_d)}   |   Rozdzielczość teoretyczna: {rozdzielczosc:.4f} m",
+                     font=("Arial", 10), bg="#2b2b2b", fg="#aaaaaa").pack(anchor=tk.W, pady=(0, 20))
+
+            tk.Frame(kontener, height=1, bg="#555555").pack(fill=tk.X, pady=(0, 15))
+
+            etykiety = {
+                "Średni błąd bezwzględny": sredni_blad,
+                "Maksymalny błąd": max_blad,
+                "Błąd średniokwadratowy (RMS)": rms_blad,
+            }
+
+            for etykieta, wartosc in etykiety.items():
+                wiersz = tk.Frame(kontener, bg="#2b2b2b")
+                wiersz.pack(fill=tk.X, pady=4)
+
+                tk.Label(wiersz, text=etykieta, font=("Arial", 12),
+                         bg="#2b2b2b", fg="#e0e0e0", width=35, anchor=tk.W).pack(side=tk.LEFT)
+
+                tk.Label(wiersz, text=f"{wartosc:.6f} m", font=("Consolas", 12, "bold"),
+                         bg="#2b2b2b", fg="#4fc3f7", anchor=tk.W).pack(side=tk.LEFT, padx=(10, 0))
             
         except Exception as e:
             messagebox.showerror("Błąd symulacji", str(e))
-

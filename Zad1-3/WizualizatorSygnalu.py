@@ -75,7 +75,7 @@ class WizualizatorSygnalu:
         wykres.suptitle(f"{tryb} - {parametry_opis}")
 
         # Przebieg czasowy
-        os_czasowa.plot(czas_high, sygnal_oryg, color='green', alpha=0.6, label='Oryginał', linewidth=1)
+        os_czasowa.plot(czas_high, sygnal_oryg, color='red', alpha=0.8, label='Oryginał', linewidth=1.5)
         os_czasowa.plot(czas_high, sygnal_nowy, color='cyan', label='Wynik Konwersji', linewidth=1.5)
         
         if f_sample and t_sample is not None and x_sample is not None:
