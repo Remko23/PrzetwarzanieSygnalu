@@ -14,10 +14,7 @@ class CzujnikOdleglosci:
         self.korelacja_typ = korelacja_typ
         
     def _sygnal_sondujacy(self, t):
-        # Konfiguracja sygnału: suma trzech sinusów o różnych częstotliwościach
-        # f1: częstotliwość podstawowa (1/T_syg)
-        # f2: trzecia harmoniczna (3/T_syg) z amplitudą 0.4
-        # f3: piąta harmoniczna (5/T_syg) z amplitudą 0.2
+        # suma trzech sygnalow sinusowych
         f1 = 1.0 / self.T_syg
         f2 = 3.0 / self.T_syg
         f3 = 5.0 / self.T_syg
@@ -28,7 +25,6 @@ class CzujnikOdleglosci:
         rzeczywiste_d = []
         zmierzone_d = []
 
-        # Buforowanie
         buf_wyslany = np.zeros(self.N_buf)
         buf_odebrany = np.zeros(self.N_buf)
 
@@ -40,15 +36,10 @@ class CzujnikOdleglosci:
 
         for k in range(liczba_krokow_sym):
             t = k * self.dt
-            
-            # Prawdziwa odległość w danym momencie (S = V * t + d0)
             d_t = self.d0 + self.v_ob * t
-            
-            # Sprawdzenie czy nadszedł czas próbkowania
+
             if t >= czas_nastepnego_probkowania:
                 val_wys = self._sygnal_sondujacy(t)
-                
-                # Sygnał powracający jest opóźniony o czas lotu w obie strony: t_op = 2 * d(t) / c
                 t_opoznienia = 2.0 * d_t / self.c
                 t_wyslania = t - t_opoznienia
                 
@@ -64,32 +55,18 @@ class CzujnikOdleglosci:
                 buf_odebrany[-1] = val_od
                 
                 czas_nastepnego_probkowania += dt_probk
-                
-            # Sprawdzenie czy nadszedł czas analizy i raportowania odległości
+
             if t >= czas_nastepnego_raportu:
-                # Korelacja dwóch zbuforowanych sygnałów.
-                # Używamy zaimplementowanej metody korelacji.
-                # Aby pik korelacji był po prawej stronie dla opóźnionego sygnału odebranego,
-                # wywołujemy korelację z parametrami (sygnał_odebrany, sygnał_wysłany)
                 if self.korelacja_typ == "bezposrednia":
                     korelacja = FiltrSygnalu.korelacja_bezposrednia(buf_odebrany, buf_wyslany)
                 else:
                     korelacja = FiltrSygnalu.korelacja_z_uzyciem_splotu(buf_odebrany, buf_wyslany)
-                
-                # Wykres korelacji wzajemnej ma rozmiar 2*N_buf - 1
-                # Środkowy indeks (odpowiadający opóźnieniu zerowemu) to N_buf - 1
+
                 srodek = self.N_buf - 1
-                
-                # Bierzemy pod uwagę tylko prawa połówkę wykresu (t >= 0)
                 prawa_polowa = korelacja[srodek:]
-                
-                # Znalezienie maksimum
                 max_idx = np.argmax(prawa_polowa)
-                
-                # Przeliczenie indeksu na czas opóźnienia
+
                 t_opoznienia_zmierzone = max_idx * dt_probk
-                
-                # Wyliczenie odległości na podstawie opóźnienia
                 d_zmierzone = self.c * t_opoznienia_zmierzone / 2.0
                 
                 czasy_raportu.append(t)

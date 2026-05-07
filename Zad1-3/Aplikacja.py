@@ -189,7 +189,6 @@ class Aplikacja(tk.Tk):
         self.przycisk_filtruj = ttk.Button(ramka_filtracji, text="Filtruj Główny Sygnał", command=self.filtruj_sygnal)
         self.przycisk_filtruj.grid(row=3, column=0, columnspan=4, pady=5)
 
-        # --- ZAKŁADKA POMIAR ODLEGŁOŚCI ---
         ramka_srodowisko = ttk.LabelFrame(zakladka_odleglosc, text="Parametry środowiska i obiektu", padding="10")
         ramka_srodowisko.pack(fill=tk.X, pady=5)
         
@@ -582,8 +581,6 @@ class Aplikacja(tk.Tk):
             pol_sinc.insert(0, "50")
             pol_sinc.grid(row=1, column=3, padx=2, pady=2)
             self.parametry_konwersji_pola['sinc_n'] = pol_sinc
-            
-            # Ustawienie początkowej widoczności
             self.aktualizuj_widocznosc_sinc()
             
         elif tryb == "Kwantyzacja":
@@ -805,8 +802,8 @@ class Aplikacja(tk.Tk):
             plotno = FigureCanvasTkAgg(fig, master=ramka_wynikow)
             plotno.draw()
             plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-            
-            # --- ZAKŁADKA STATYSTYK RADARU ---
+
+
             ramka_stat = ttk.Frame(self.notatnik_wizualizacji)
             self.notatnik_wizualizacji.add(ramka_stat, text="Statystyki Radaru")
             

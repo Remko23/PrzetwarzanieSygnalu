@@ -74,7 +74,6 @@ class WizualizatorSygnalu:
         wykres.patch.set_facecolor('#2b2b2b')
         wykres.suptitle(f"{tryb} - {parametry_opis}")
 
-        # Przebieg czasowy
         os_czasowa.plot(czas_high, sygnal_oryg, color='red', alpha=0.8, label='Oryginał', linewidth=1.5)
         os_czasowa.plot(czas_high, sygnal_nowy, color='cyan', label='Wynik Konwersji', linewidth=1.5)
         
@@ -86,7 +85,6 @@ class WizualizatorSygnalu:
         os_czasowa.grid(True, linestyle='--', color='gray', alpha=0.5)
         os_czasowa.legend()
 
-        # Histogram (korzystamy z wyniku konwersji jako glownego)
         dane = sygnal_nowy
         minimum_danych = np.min(dane)
         maksimum_danych = np.max(dane)

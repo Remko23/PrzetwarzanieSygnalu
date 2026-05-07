@@ -74,12 +74,6 @@ class FiltrSygnalu:
         y = np.zeros(L)
         
         for n in range(L):
-            # n to indeks w tablicy wyjsciowej (od 0 do L-1)
-            # Przesuniecie 'm' odpowiada za relacje h(k) * x(k - m) lub podobne
-            # Zgodnie z instrukcja R_hx = sum h(k) * x(n - k) gdzie R wyjsciowe przesuniete
-            # Opracujmy wzor korelacji R_hx(m) = sum_k h(k)*x(k-m).
-            # Jeśli R_hx(m) chcemy mieć w tablicy od indeksu 0.
-            # R_hx(n) = sum_{k=0}^{M-1} h(k) * x(k + (N-1) - n) - żeby uzyskać poprawny splot z odwróconym x.
             suma = 0.0
             for k in range(M):
                 idx_x = k + (N - 1) - n
@@ -91,7 +85,6 @@ class FiltrSygnalu:
 
     @staticmethod
     def korelacja_z_uzyciem_splotu(h, x):
-        # Korelacja to splot h z odwróconym x
         x_odwr = x[::-1]
         return FiltrSygnalu.splot(h, x_odwr)
 
