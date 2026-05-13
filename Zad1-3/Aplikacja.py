@@ -761,6 +761,13 @@ class Aplikacja(tk.Tk):
             
             czasy, rz_d, zm_d, buf_wyslany, buf_odebrany, korelacja, t_koniec = czujnik.symuluj(czas_calkowity)
             self.loguj_wiadomosc("Symulacja zakończona. Wyświetlam wyniki.")
+            srodek = int(self.pole_N_buf.get()) - 1
+            prawa_polowa = korelacja[srodek:]
+            max_idx = np.argmax(prawa_polowa)
+            dt_probk = 1.0 / float(self.pole_fp_rad.get())
+            odleglosc = float(self.pole_c_osr.get()) * (max_idx * dt_probk) / 2.0
+            
+            self.loguj_wiadomosc(f"Odległość policzona dla maksimum korelacji: {odleglosc:.4f} m")
             
             for tab_id in self.notatnik_wizualizacji.tabs():
                 if self.notatnik_wizualizacji.tab(tab_id, "text") in ["Wyniki Radaru", "Statystyki Radaru"]:

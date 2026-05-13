@@ -44,9 +44,9 @@ class CzujnikOdleglosci:
                 t_wyslania = t - t_opoznienia
                 
                 if t_wyslania < 0:
-                    val_od = 0.0
+                    val_od = np.random.normal(0, 0.5)
                 else:
-                    val_od = self._sygnal_sondujacy(t_wyslania)
+                    val_od = self._sygnal_sondujacy(t_wyslania) + np.random.normal(0, 0.5)
                     
                 buf_wyslany = np.roll(buf_wyslany, -1)
                 buf_wyslany[-1] = val_wys
