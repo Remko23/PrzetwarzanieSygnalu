@@ -796,6 +796,18 @@ class Aplikacja(tk.Tk):
             ax3.plot(t_kor, korelacja, color='cyan', linewidth=2)
             ax3.set_title("Korelacja Sygnałów Sondującego oraz Powrotnego", color='white')
             
+            t_srodek = t_kor[N-1]
+            t_pik = t_kor[N-1 + max_idx]
+            opoznienie_sek = max_idx * (1.0 / fp)
+            
+            ax3.axvline(x=t_srodek, color='red', linestyle='--', alpha=0.7, label='Środek (0 opóźnienia)')
+            if max_idx > 0:
+                ax3.axvline(x=t_pik, color='yellow', linestyle=':', alpha=0.9, label=f'Pik korelacji (+{opoznienie_sek:.5f} s)')
+                ax3.axvspan(t_srodek, t_pik, color='yellow', alpha=0.2)
+            ax3.legend(loc='upper right', facecolor='#2b2b2b', edgecolor='gray', labelcolor='white', fontsize=8)
+            
+            self.loguj_wiadomosc(f"Wizualne przesunięcie piku od środka wykresu wynosi: {opoznienie_sek:.6f} sekund")
+            
             for ax in [ax1, ax2, ax3]:
                 ax.set_facecolor('#2b2b2b')
                 ax.tick_params(colors='white')
