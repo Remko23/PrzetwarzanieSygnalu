@@ -763,7 +763,14 @@ class Aplikacja(tk.Tk):
             self.loguj_wiadomosc("Symulacja zakończona. Wyświetlam wyniki.")
             srodek = int(self.pole_N_buf.get()) - 1
             prawa_polowa = korelacja[srodek:]
-            max_idx = np.argmax(prawa_polowa)
+            
+            import scipy.signal
+            peaks, _ = scipy.signal.find_peaks(prawa_polowa)
+            if len(peaks) > 0:
+                najwyzszy_pik_idx = np.argmax(prawa_polowa[peaks])
+                max_idx = peaks[najwyzszy_pik_idx]
+            else:
+                max_idx = np.argmax(prawa_polowa)
             dt_probk = 1.0 / float(self.pole_fp_rad.get())
             odleglosc = float(self.pole_c_osr.get()) * (max_idx * dt_probk) / 2.0
             

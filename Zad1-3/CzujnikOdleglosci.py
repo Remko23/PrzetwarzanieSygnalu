@@ -64,7 +64,14 @@ class CzujnikOdleglosci:
 
                 srodek = self.N_buf - 1
                 prawa_polowa = korelacja[srodek:]
-                max_idx = np.argmax(prawa_polowa)
+                
+                import scipy.signal
+                peaks, _ = scipy.signal.find_peaks(prawa_polowa)
+                if len(peaks) > 0:
+                    najwyzszy_pik_idx = np.argmax(prawa_polowa[peaks])
+                    max_idx = peaks[najwyzszy_pik_idx]
+                else:
+                    max_idx = np.argmax(prawa_polowa)
 
                 t_opoznienia_zmierzone = max_idx * dt_probk
                 d_zmierzone = self.c * t_opoznienia_zmierzone / 2.0
