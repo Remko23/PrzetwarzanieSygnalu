@@ -100,3 +100,51 @@ class WizualizatorSygnalu:
         
         wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
         return [("Wyniki Konwersji", wykres)]
+
+    @staticmethod
+    def rysuj_korelacje(t_a, sig_a, t_b, sig_b, lags, korelacja, metoda_opis):
+        plt.style.use('dark_background')
+        
+        wykres, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 10))
+        wykres.patch.set_facecolor('#2b2b2b')
+        wykres.suptitle(f"Wynik korelacji wzajemnej ({metoda_opis})")
+        
+        if np.iscomplexobj(sig_a):
+            ax1.plot(t_a, sig_a.real, color='cyan', label='Real(A)', linewidth=1.5)
+            ax1.plot(t_a, sig_a.imag, color='magenta', label='Imag(A)', linewidth=1.5, alpha=0.7)
+            ax1.legend(loc='upper right', facecolor='#2b2b2b', labelcolor='white')
+        else:
+            ax1.plot(t_a, sig_a, color='cyan', linewidth=1.5)
+        ax1.set_title("Sygnał A")
+        ax1.set_ylabel("Amplituda")
+        
+        if np.iscomplexobj(sig_b):
+            ax2.plot(t_b, sig_b.real, color='yellow', label='Real(B)', linewidth=1.5)
+            ax2.plot(t_b, sig_b.imag, color='orange', label='Imag(B)', linewidth=1.5, alpha=0.7)
+            ax2.legend(loc='upper right', facecolor='#2b2b2b', labelcolor='white')
+        else:
+            ax2.plot(t_b, sig_b, color='yellow', linewidth=1.5)
+        ax2.set_title("Sygnał B")
+        ax2.set_ylabel("Amplituda")
+        
+        if np.iscomplexobj(korelacja):
+            ax3.plot(lags, korelacja.real, color='lime', marker='o', markersize=2, label='Real(R_AB)', linewidth=1)
+            ax3.plot(lags, korelacja.imag, color='magenta', marker='x', markersize=2, label='Imag(R_AB)', linewidth=1, alpha=0.7)
+            ax3.legend(loc='upper right', facecolor='#2b2b2b', labelcolor='white')
+        else:
+            ax3.plot(lags, korelacja, color='lime', marker='o', markersize=2, linewidth=1)
+            
+        ax3.set_title("Korelacja wzajemna R_AB(n)")
+        ax3.set_xlabel("Przesunięcie n (próbki)")
+        ax3.set_ylabel("Wartość")
+        
+        for ax in [ax1, ax2, ax3]:
+            ax.set_facecolor('#2b2b2b')
+            ax.tick_params(colors='white')
+            ax.grid(True, linestyle='--', color='gray', alpha=0.5)
+            for spine in ax.spines.values():
+                spine.set_color('gray')
+                
+        wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+        return [("Wyniki Korelacji", wykres)]
+

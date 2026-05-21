@@ -38,6 +38,9 @@ class Aplikacja(tk.Tk):
         }
 
         self.kody_sygnalow = {v: k for k, v in self.typy_sygnalow.items()}
+        self.pola_parametrow_a = {}
+        self.pola_parametrow_b = {}
+        self.uzyj_glownego_jako_a = tk.BooleanVar(value=False)
 
         self.utworz_widzety()
 
@@ -80,6 +83,20 @@ class Aplikacja(tk.Tk):
                  background=[("selected", "#505050")],
                  expand=[("selected", [1, 1, 1, 0])])
 
+        styl.configure("TCheckbutton",
+                       background=kolor_tla,
+                       foreground=kolor_tekstu,
+                       focuscolor="none",
+                       font=("Arial", 10))
+        styl.map("TCheckbutton",
+                 background=[("disabled", kolor_tla), ("active", kolor_tla)],
+                 foreground=[("disabled", "#777777"), ("active", "#ffffff")],
+                 indicatorcolor=[("selected", "#4fc3f7"), ("!selected", tlo_pola_tekstowego)],
+                 indicatorbackground=[("selected", tlo_pola_tekstowego), ("!selected", tlo_pola_tekstowego)],
+                 lightcolor=[("selected", "#4fc3f7"), ("!selected", "#555555")],
+                 darkcolor=[("selected", "#0091ea"), ("!selected", "#111111")],
+                 bordercolor=[("selected", "#4fc3f7"), ("!selected", "#555555")])
+
     def utworz_widzety(self):
         panel_podzielony = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         panel_podzielony.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -107,6 +124,66 @@ class Aplikacja(tk.Tk):
 
         zakladka_odleglosc = ttk.Frame(self.zakladki_lewe)
         self.zakladki_lewe.add(zakladka_odleglosc, text="Pomiar odległości")
+
+        zakladka_korelacja = ttk.Frame(self.zakladki_lewe)
+        self.zakladki_lewe.add(zakladka_korelacja, text="Korelacja")
+
+        ramka_a = ttk.LabelFrame(zakladka_korelacja, text="Sygnał A", padding="10")
+        ramka_a.pack(fill=tk.X, pady=5)
+
+        self.chk_uzyj_glownego = ttk.Checkbutton(ramka_a, text="Użyj Sygnału Głównego jako A", 
+                                                 variable=self.uzyj_glownego_jako_a, 
+                                                 command=self.przelacz_uzycie_glownego_a)
+        self.chk_uzyj_glownego.grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        self.label_sygnal_a = ttk.Label(ramka_a, text="Sygnał A:")
+        self.label_sygnal_a.grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_a = ttk.Combobox(ramka_a, values=list(self.typy_sygnalow.values()),
+                                            state="readonly", width=38)
+        self.wybor_sygnalu_a.grid(row=1, column=1, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_a.bind("<<ComboboxSelected>>", self.przy_wyborze_sygnalu_a)
+
+        self.ramka_parametrow_a = ttk.Frame(ramka_a)
+        self.ramka_parametrow_a.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_a, text="Próbek N_A:").grid(row=3, column=0, sticky=tk.W, pady=2)
+        self.pole_liczba_probek_a = ttk.Entry(ramka_a, width=10)
+        self.pole_liczba_probek_a.insert(0, "1000")
+        self.pole_liczba_probek_a.grid(row=3, column=1, sticky=tk.W, pady=2)
+
+        ramka_b = ttk.LabelFrame(zakladka_korelacja, text="Sygnał B", padding="10")
+        ramka_b.pack(fill=tk.X, pady=5)
+
+        ttk.Label(ramka_b, text="Sygnał B:").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_b = ttk.Combobox(ramka_b, values=list(self.typy_sygnalow.values()),
+                                            state="readonly", width=38)
+        self.wybor_sygnalu_b.grid(row=0, column=1, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_b.bind("<<ComboboxSelected>>", self.przy_wyborze_sygnalu_b)
+
+        self.ramka_parametrow_b = ttk.Frame(ramka_b)
+        self.ramka_parametrow_b.grid(row=1, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_b, text="Próbek N_B:").grid(row=2, column=0, sticky=tk.W, pady=2)
+        self.pole_liczba_probek_b = ttk.Entry(ramka_b, width=10)
+        self.pole_liczba_probek_b.insert(0, "1000")
+        self.pole_liczba_probek_b.grid(row=2, column=1, sticky=tk.W, pady=2)
+
+        ramka_param_kor = ttk.LabelFrame(zakladka_korelacja, text="Parametry korelacji", padding="10")
+        ramka_param_kor.pack(fill=tk.X, pady=5)
+
+        ttk.Label(ramka_param_kor, text="Częst. próbkowania fp (Hz):").grid(row=0, column=0, sticky=tk.W, pady=2)
+        self.pole_fp_korelacji = ttk.Entry(ramka_param_kor, width=10)
+        self.pole_fp_korelacji.insert(0, "1000.0")
+        self.pole_fp_korelacji.grid(row=0, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_param_kor, text="Metoda korelacji:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.wybor_algorytmu_korelacji = ttk.Combobox(ramka_param_kor, values=["Bezpośrednia", "Z użyciem splotu"],
+                                                      state="readonly", width=18)
+        self.wybor_algorytmu_korelacji.current(0)
+        self.wybor_algorytmu_korelacji.grid(row=1, column=1, sticky=tk.W, pady=2)
+
+        self.przycisk_koreluj = ttk.Button(zakladka_korelacja, text="Oblicz i Wizualizuj Korelację", command=self.oblicz_korelacje)
+        self.przycisk_koreluj.pack(pady=10)
 
         ramka_generacji_1 = ttk.LabelFrame(zakladka_generacja, text="Generacja Sygnału Głównego", padding="10")
         ramka_generacji_1.pack(fill=tk.X, pady=5)
@@ -315,6 +392,8 @@ class Aplikacja(tk.Tk):
             if kod_sygnalu == "s11":
                 wymagane_parametry.append(('prawdopodobienstwo', 'Prawd. skoku', '0.1'))
 
+        wymagane_parametry.append(('przesuniecie_probek', 'Przesunięcie (próbki)', '0'))
+
         for i, (klucz_parametru, etykieta_parametru, wartosc_domyslna) in enumerate(wymagane_parametry):
             ttk.Label(ramka_rodzica, text=etykieta_parametru + ":").grid(row=i // 4, column=(i % 4) * 2, padx=2, pady=2,
                                                                          sticky=tk.E)
@@ -333,12 +412,32 @@ class Aplikacja(tk.Tk):
         kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
         self._zbuduj_interfejs_parametrow(self.ramka_parametrow_2, self.pola_parametrow_2, kod_sygnalu)
 
+    def przy_wyborze_sygnalu_a(self, zdarzenie):
+        nazwa_sygnalu = self.wybor_sygnalu_a.get()
+        kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
+        self._zbuduj_interfejs_parametrow(self.ramka_parametrow_a, self.pola_parametrow_a, kod_sygnalu)
+
+    def przy_wyborze_sygnalu_b(self, zdarzenie):
+        nazwa_sygnalu = self.wybor_sygnalu_b.get()
+        kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
+        self._zbuduj_interfejs_parametrow(self.ramka_parametrow_b, self.pola_parametrow_b, kod_sygnalu)
+
+    def przelacz_uzycie_glownego_a(self):
+        if self.uzyj_glownego_jako_a.get():
+            self.wybor_sygnalu_a.config(state="disabled")
+            for w in self.ramka_parametrow_a.winfo_children():
+                w.destroy()
+            self.pola_parametrow_a.clear()
+        else:
+            self.wybor_sygnalu_a.config(state="readonly")
+            self.przy_wyborze_sygnalu_a(None)
+
     def _pobierz_przetworzone_parametry(self, slownik_parametrow):
         przetworzone = {}
         for klucz, pole_wprowadzania in slownik_parametrow.items():
             wartosc_tekstowa = pole_wprowadzania.get()
             try:
-                if klucz == 'numer_probki_skoku':
+                if klucz in ['numer_probki_skoku', 'przesuniecie_probek']:
                     przetworzone[klucz] = int(wartosc_tekstowa)
                 else:
                     przetworzone[klucz] = float(wartosc_tekstowa)
@@ -874,3 +973,131 @@ class Aplikacja(tk.Tk):
             
         except Exception as e:
             messagebox.showerror("Błąd symulacji", str(e))
+
+    def oblicz_korelacje(self):
+        try:
+            fp = float(self.pole_fp_korelacji.get())
+            if fp <= 0:
+                raise ValueError("Częstotliwość próbkowania musi być większa od 0.")
+            
+            algorytm = self.wybor_algorytmu_korelacji.get()
+            if not algorytm:
+                raise ValueError("Wybierz metodę korelacji!")
+        except Exception as e:
+            messagebox.showerror("Błąd parametrów", f"Błędne parametry korelacji: {str(e)}")
+            return
+
+        try:
+            if self.uzyj_glownego_jako_a.get():
+                if not self.sygnal_glowny:
+                    raise ValueError("Brak wygenerowanego sygnału głównego! Najpierw wygeneruj go w pierwszej zakładce.")
+                
+                N_A = int(self.pole_liczba_probek_a.get())
+                if N_A <= 0:
+                    raise ValueError("Liczba próbek N_A must be greater than 0.")
+                
+                self.sygnal_glowny.resetuj()
+                probki_a = np.array([next(self.sygnal_glowny) for _ in range(N_A)])
+                self.sygnal_glowny.resetuj()
+                
+                fp_a = self.sygnal_glowny.czestotliwosc_probkowania
+                fp = fp_a
+                self.pole_fp_korelacji.delete(0, tk.END)
+                self.pole_fp_korelacji.insert(0, f"{fp_a}")
+                
+                typ_a_nazwa = "Sygnał Główny"
+            else:
+                nazwa_syg_a = self.wybor_sygnalu_a.get()
+                if not nazwa_syg_a:
+                    raise ValueError("Wybierz typ sygnału A!")
+                
+                kod_syg_a = self.kody_sygnalow[nazwa_syg_a]
+                parametry_a = self._pobierz_przetworzone_parametry(self.pola_parametrow_a)
+                N_A = int(self.pole_liczba_probek_a.get())
+                if N_A <= 0:
+                    raise ValueError("Liczba próbek N_A must be greater than 0.")
+                
+                sig_a = GeneratorSygnalu(zrodlo_sygnalu=kod_syg_a, czestotliwosc_probkowania=fp, **parametry_a)
+                probki_a = np.array([next(sig_a) for _ in range(N_A)])
+                typ_a_nazwa = nazwa_syg_a
+        except Exception as e:
+            messagebox.showerror("Błąd Sygnału A", f"Błąd przy generowaniu Sygnału A: {str(e)}")
+            return
+
+        try:
+            nazwa_syg_b = self.wybor_sygnalu_b.get()
+            if not nazwa_syg_b:
+                raise ValueError("Wybierz typ sygnału B!")
+            
+            kod_syg_b = self.kody_sygnalow[nazwa_syg_b]
+            parametry_b = self._pobierz_przetworzone_parametry(self.pola_parametrow_b)
+            N_B = int(self.pole_liczba_probek_b.get())
+            if N_B <= 0:
+                raise ValueError("Liczba próbek N_B must be greater than 0.")
+            
+            sig_b = GeneratorSygnalu(zrodlo_sygnalu=kod_syg_b, czestotliwosc_probkowania=fp, **parametry_b)
+            probki_b = np.array([next(sig_b) for _ in range(N_B)])
+        except Exception as e:
+            messagebox.showerror("Błąd Sygnału B", f"Błąd przy generowaniu Sygnału B: {str(e)}")
+            return
+
+        try:
+            if algorytm == "Bezpośrednia":
+                korelacja = FiltrSygnalu.korelacja_bezposrednia(probki_a, probki_b)
+            else:
+                korelacja = FiltrSygnalu.korelacja_z_uzyciem_splotu(probki_a, probki_b)
+                
+            L = len(korelacja)
+            lags = np.arange(L) - (N_B - 1)
+            time_lags = lags / fp
+            
+            self.loguj_wiadomosc(f"--- Obliczono Korelację ({algorytm}) ---")
+            self.loguj_wiadomosc(f" Sygnał A: {typ_a_nazwa} (N={N_A})")
+            self.loguj_wiadomosc(f" Sygnał B: {nazwa_syg_b} (N={N_B})")
+            self.loguj_wiadomosc(f" Krok próbkowania dt: {1.0/fp:.6f} s")
+            
+            korelacja_abs = np.abs(korelacja)
+            max_idx = np.argmax(korelacja_abs)
+            max_val = korelacja[max_idx]
+            max_lag = lags[max_idx]
+            max_time = time_lags[max_idx]
+            
+            if np.iscomplexobj(max_val):
+                max_val_str = f"{max_val.real:.4f} + {max_val.imag:.4f}j"
+            else:
+                max_val_str = f"{max_val:.4f}"
+                
+            self.loguj_wiadomosc(f" Długość wyniku: {L}")
+            self.loguj_wiadomosc(f" Maksimum korelacji: {max_val_str}")
+            self.loguj_wiadomosc(f"   na próbce (lag): {max_lag}")
+            self.loguj_wiadomosc(f"   opóźnienie czasowe: {max_time:.6f} s")
+            self.loguj_wiadomosc("-" * 35)
+
+            for tab_id in self.notatnik_wizualizacji.tabs():
+                if self.notatnik_wizualizacji.tab(tab_id, "text") == "Wyniki Korelacji":
+                    self.notatnik_wizualizacji.forget(tab_id)
+                    break
+                    
+            ramka_wynikow = ttk.Frame(self.notatnik_wizualizacji)
+            self.notatnik_wizualizacji.add(ramka_wynikow, text="Wyniki Korelacji")
+            self.notatnik_wizualizacji.select(ramka_wynikow)
+            
+            t_a = np.arange(N_A) / fp
+            t_b = np.arange(N_B) / fp
+            
+            wykresy = WizualizatorSygnalu.rysuj_korelacje(t_a, probki_a, t_b, probki_b, lags, korelacja, algorytm)
+            
+            for tytul, wykres in wykresy:
+                plotno = FigureCanvasTkAgg(wykres, master=ramka_wynikow)
+                plotno.draw()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+                pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka_wynikow)
+                pasek_narzedzi.update()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                
+            messagebox.showinfo("Sukces", "Korelacja została pomyślnie obliczona i zwizualizowana!")
+            
+        except Exception as e:
+            messagebox.showerror("Błąd korelacji", f"Błąd podczas obliczania korelacji: {str(e)}")
+            return

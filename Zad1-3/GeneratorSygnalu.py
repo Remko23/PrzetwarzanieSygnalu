@@ -5,6 +5,7 @@ class GeneratorSygnalu:
     def __init__(self, zrodlo_sygnalu=None, fabryka_generatorow=None, czestotliwosc_probkowania=1000.0, **kwargs):
         self.czestotliwosc_probkowania = czestotliwosc_probkowania
         self.parametry = kwargs
+        self.przesuniecie_probek = int(kwargs.get('przesuniecie_probek', 0))
         self.nr_probki = 0
 
         self.metody = {
@@ -24,9 +25,26 @@ class GeneratorSygnalu:
 
         if fabryka_generatorow is None:
             typ_sygnalu = zrodlo_sygnalu.lower()
-            self._fabryka_generatorow = lambda: self.metody[typ_sygnalu](**self.parametry)
+            bazowa_fabryka = lambda: self.metody[typ_sygnalu](**self.parametry)
         else:
-            self._fabryka_generatorow = fabryka_generatorow
+            bazowa_fabryka = fabryka_generatorow
+
+        if self.przesuniecie_probek > 0:
+            def fabryka_z_przesunieciem():
+                gen = bazowa_fabryka()
+                try:
+                    pierwsza_wartosc = next(gen)
+                except StopIteration:
+                    return
+                zero = 0.0 + 0.0j if isinstance(pierwsza_wartosc, complex) or np.iscomplexobj(pierwsza_wartosc) else 0.0
+                for _ in range(self.przesuniecie_probek):
+                    yield zero
+                yield pierwsza_wartosc
+                for wartosc in gen:
+                    yield wartosc
+            self._fabryka_generatorow = fabryka_z_przesunieciem
+        else:
+            self._fabryka_generatorow = bazowa_fabryka
 
         self.aktywny_generator = self._fabryka_generatorow()
 
