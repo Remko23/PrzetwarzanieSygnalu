@@ -199,7 +199,7 @@ class Aplikacja(tk.Tk):
         
         ttk.Label(ramka_srodowisko, text="Prędkość obiektu v:").grid(row=1, column=0, sticky=tk.W, pady=2)
         self.pole_v_ob = ttk.Entry(ramka_srodowisko, width=10)
-        self.pole_v_ob.insert(0, "15.0")
+        self.pole_v_ob.insert(0, "0.0")
         self.pole_v_ob.grid(row=1, column=1, sticky=tk.W, pady=2)
         
         ttk.Label(ramka_srodowisko, text="Pocz. odległość d0:").grid(row=2, column=0, sticky=tk.W, pady=2)
