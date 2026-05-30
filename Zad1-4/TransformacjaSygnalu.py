@@ -3,28 +3,33 @@ import numpy as np
 class TransformacjaSygnalu:
 
     @staticmethod
-    def dft(x):
+    def dyskretna_transformacja_fouriera(x):
         N = len(x)
         m = np.arange(N)
         n = np.arange(N)
-        # Tworzenie macierzy NxN gdzie kazdy element to m*n
         mn = m.reshape((N, 1)) * n
-        # Exponenta, macierz bazowa Fouriera
         e = np.exp(-1j * 2 * np.pi * mn / N)
-        # Obliczenie transformaty Fouriera przez mnożenie macierzy i dzielenie przez N (wg wzoru z instrukcji)
         X = np.dot(e, x) / N
         return X
 
     @staticmethod
-    def fft_dit(x):
-        # Szybka transformacja Fouriera z decymacją w czasie (DIT)
+    def odwrotna_dyskretna_transformacja_fouriera(X):
+        N = len(X)
+        m = np.arange(N)
+        n = np.arange(N)
+        mn = m.reshape((N, 1)) * n
+        e = np.exp(1j * 2 * np.pi * mn / N)
+        x = np.dot(e, X)
+        return x
+
+    @staticmethod
+    def szybka_transformacja_fouriera_z_decymacja_w_czasie(x):
         x = np.asarray(x, dtype=complex)
         N = len(x)
         
         if N <= 1:
             return x
         
-        # Sprawdzanie czy N to potęga 2
         if (N & (N - 1)) != 0:
             raise ValueError("Długość wektora musi być potęgą liczby 2")
             
@@ -39,12 +44,10 @@ class TransformacjaSygnalu:
             return np.array([even[k] + T[k] for k in range(N // 2)] +
                             [even[k] - T[k] for k in range(N // 2)])
                             
-        # Ostateczne skalowanie 1/N ze względu na wzór definicyjny z instrukcji
         return _fft_dit_rekurencyjnie(x) / N
 
     @staticmethod
-    def fft_dif(x):
-        # Szybka transformacja Fouriera z decymacją w częstotliwości (DIF)
+    def szybka_transformacja_fouriera_z_decymacja_w_czestotliwosci(x):
         x = np.asarray(x, dtype=complex)
         N = len(x)
         
@@ -73,8 +76,17 @@ class TransformacjaSygnalu:
         return _fft_dif_rekurencyjnie(x) / N
 
     @staticmethod
-    def dct_2(x):
-        # Dyskretna Transformacja Kosinusowa typu II - z definicji
+    def odwrotna_szybka_transformacja_fouriera(X):
+        N = len(X)
+        if N <= 1:
+            return X
+        X = np.asarray(X, dtype=complex)
+        
+        wynik = np.conjugate(TransformacjaSygnalu.szybka_transformacja_fouriera_z_decymacja_w_czasie(np.conjugate(X))) * N
+        return wynik
+
+    @staticmethod
+    def dyskretna_transformacja_kosinusowa(x):
         N = len(x)
         X = np.zeros(N)
         for m in range(N):
@@ -82,42 +94,31 @@ class TransformacjaSygnalu:
             for n in range(N):
                 suma += x[n] * np.cos(np.pi * m * (2 * n + 1) / (2 * N))
             
-            # Normalizacja
             c = np.sqrt(1 / N) if m == 0 else np.sqrt(2 / N)
             X[m] = c * suma
         return X
 
     @staticmethod
-    def fct_2(x):
-        # Szybka Transformacja Kosinusowa typu II przy użyciu FFT
+    def szybka_transformacja_kosinusowa(x):
         N = len(x)
-        
-        # 1. Przekształcenie wektora wejściowego w długość N
         v = np.zeros(N, dtype=x.dtype)
         for i in range(N // 2):
             v[i] = x[2 * i]
             v[N - 1 - i] = x[2 * i + 1]
             
-        # Jesli N nieparzyste
         if N % 2 != 0:
             v[N // 2] = x[N - 1]
             
-        # 2. Wykonanie FFT unscaled na przekształconym wektorze
-        # Korzystamy z np.fft.fft, które jest unscaled
         V = np.fft.fft(v)
-        
-        # 3. Przemnożenie przez współczynniki i skalowanie
         X = np.zeros(N)
         for m in range(N):
             c = np.sqrt(1 / N) if m == 0 else np.sqrt(2 / N)
-            # Re{ V(m) * e^{-j pi m / (2N)} }
             X[m] = c * np.real(V[m] * np.exp(-1j * np.pi * m / (2 * N)))
             
         return X
 
     @staticmethod
-    def wht(x):
-        # Transformacja Walsha-Hadamarda (rekurencyjna budowa macierzy i mnożenie)
+    def transformacja_walsha_hadamarda(x):
         N = len(x)
         
         if (N & (N - 1)) != 0:
@@ -133,12 +134,10 @@ class TransformacjaSygnalu:
                 return np.vstack((top, bottom))
                 
         H_N = create_hadamard_matrix(N)
-        # Zwyczajowo niektórzy dzielą przez N lub sqrt(N). Przyjmijmy 1/N.
         return np.dot(H_N, x) / N
 
     @staticmethod
-    def fwht(x):
-        # Szybka transformacja Walsha-Hadamarda (w miejscu)
+    def szybka_transformacja_walsha_hadamarda(x):
         N = len(x)
         if (N & (N - 1)) != 0:
             raise ValueError("Długość wektora musi być potęgą liczby 2")
