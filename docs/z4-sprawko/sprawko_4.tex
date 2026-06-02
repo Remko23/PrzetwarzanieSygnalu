@@ -1,0 +1,107 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[T1]{polski}
+\usepackage[utf8]{inputenc}
+\newcommand{\BibTeX}{{\sc Bib}\TeX} 
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{subcaption}
+
+\setlength{\textheight}{21cm}
+
+\title{{\bf Zadanie nr 4 - Przekształcenie Fouriera, Walsha-Hadamarda, kosinusowe i falkowe,
+szybkie algorytmy.}\linebreak
+Cyfrowe Przetwarzanie Sygnałów}
+\author{Maciej Miazek 251589 \and Remigiusz Tomecki 251652}
+\date{\today} 
+
+\begin{document}
+\clearpage\maketitle
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+\section{Cel zadania}
+Celem niniejszego ćwiczenia było zapoznanie się z fundamentalnymi operacjami transformacji sygnałów dyskretnych z dziedziny czasu w dziedzinę częstotliwości (i pokrewne). Wymagane było praktyczne zaimplementowanie algorytmów Dyskretnej Transformacji Fouriera (DFT) oraz jej zoptymalizowanych, szybkich wariantów z decymacją w czasie (DIT FFT) i częstotliwości (DIF FFT). Analogiczne zoptymalizowane podejścia (algorytmy szybkie w złożoności $O(N \log_2 N)$) należało wykorzystać do implementacji Transformacji Kosinusowej (DCT i FCT) oraz Walsha-Hadamarda (WHT i FWHT). Ważnym elementem ćwiczenia była również modyfikacja istniejącej aplikacji w celu obsługi sygnałów o wartościach zespolonych oraz odpowiedniej interpretacji widma amplitudowego i fazowego.
+
+\section{Wstęp teoretyczny}
+Głównym aparatem matematycznym stosowanym w cyfrowym przetwarzaniu sygnałów do analizy widmowej jest Dyskretna Transformacja Fouriera. Przekształca ona wektor $x(n)$ długości $N$ na zbiór prążków $X(m)$:
+\begin{equation}
+X(m) = \frac{1}{N} \sum_{n=0}^{N-1} x(n) e^{-j \frac{2\pi m}{N} n}, \quad 0 \le m \le N-1
+\end{equation}
+Standardowy algorytm DFT realizuje te obliczenia w złożoności czasowej $O(N^2)$. Wykorzystując symetrię i okresowość czynnika obrotu (tzw. jądra transformacji) $W_N = e^{j \frac{2\pi}{N}}$, algorytm Szybkiej Transformacji Fouriera (FFT) pozwala zredukować złożoność do $O(N \log_2 N)$ m.in. dla wektorów o długości $N=2^k$.
+
+Transformacja Kosinusowa drugiego rodzaju (DCT-II) ma szerokie zastosowanie w metodach kompresji (np. format JPEG). Opiera się wyłącznie na liczbach rzeczywistych:
+\begin{equation}
+X_m = c(m) \sum_{n=0}^{N-1} x(n) \cos\left( \frac{\pi (2n+1) m}{2N} \right)
+\end{equation}
+Z kolei Transformacja Walsha-Hadamarda (WHT) wykorzystuje w pełni prostokątne i dyskretne funkcje bazowe złożone z wartości $1$ oraz $-1$. Macierze te definiowane są rekurencyjnie:
+\begin{equation}
+H_0 = [1], \quad H_m = \frac{1}{\sqrt{2}} \begin{bmatrix} H_{m-1} & H_{m-1} \\ H_{m-1} & -H_{m-1} \end{bmatrix}
+\end{equation}
+Szybki wariant tej transformaty (FWHT) polega wyłącznie na naprzemiennym dodawaniu i odejmowaniu elementów wektora, co powoduje brak zapotrzebowania na kosztowne układy mnożące w systemach sprzętowych.
+
+
+\section{Opis implementacji}
+Aplikacja została zaimplementowana w języku Python. Wykorzystane zostały biblioteki \verb|Numpy| do wykonywania szybkich operacji macierzowych oraz wektorowych, a interfejs graficzny powstał w \verb|Tkinter|.
+
+Do głównego kodu programu wprowadzono:
+\begin{itemize}
+    \item \textbf{Generację złożonych sygnałów zespolonych}: Zdefiniowano operatory $S1, S2, S3$ symulujące sumę funkcji sinusoidalnych, wprowadzono również ogólną obsługę i wizualizację sygnałów jako wartości zespolonych wektora \verb|numpy.array|.
+    \item \textbf{Klasę \texttt{TransformacjaSygnalu}}: W ramach tej klasy zamknięto metody realizujące odpowiednie wzory matematyczne. Bezpośrednie podejścia korzystają z \verb|numpy.dot()| w celu efektywnego mnożenia. Szybkie wersje algorytmów (DIT, DIF) zaimplementowano z wykorzystaniem struktury "motylkowej" (metody rekurencyjne bądź "in-place"), rozdzielając operacje na składowe parzyste i nieparzyste.
+    \item \textbf{Moduł graficzny}: Przystosowano rysowanie wykresów w bibliotece \verb|Matplotlib| by obsługiwały zarówno tryb prezentacji (Część Rzeczywista / Część Urojona), jak i format trygonometryczny (Moduł / Faza). Aby zwiększyć czytelność analizy widmowej wyeliminowano redundantne drugie połówki widma, co uwidoczniło zjawiska tuż za zerem (DC).
+    \item \textbf{Skrypt testowy}: Przygotowano dedykowany skrypt porównujący zaimplementowane, autorskie metody na tle profesjonalnej biblioteki \verb|scipy.fft|. Skrypt automatycznie weryfikuje Błąd Średniokwadratowy (MSE) oraz zlicza stempel czasowy, weryfikując złożoność.
+\end{itemize}
+
+\section{Eksperymenty i wyniki}
+\subsection{Eksperyment 1: Weryfikacja wizualizacji na sygnałach złożonych}
+\subsubsection{Założenia i przebieg}
+W oparciu o aplikację, wygenerowano sygnały testowe (S1, S2, S3) będące sumą dwóch lub trzech sinusoid o różnych, starannie dobranych parametrach i określonej częstotliwości próbkowania $f_{pr} = 16$. Wygenerowano transformaty metodą FFT i zaobserwowano rozmieszczenie prążków w widmie Moduł/Faza.
+
+\subsubsection{Rezultaty}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{ex1/widmo_s1.png}
+    \caption{Transformata sygnału (S1) - Widmo amplitudowe i fazowe}
+\end{figure}
+
+W widmie amplitudowym z łatwością możemy zidentyfikować precyzyjne prążki zlokalizowane na częstotliwościach występujących w poleceniu. Składowe różniące się amplitudami i początkową fazą poprawnie odwzorowują się na wykresie modułu w postaci pików.
+
+\subsection{Eksperyment 2: Porównanie czasów wykonania (własna implementacja DFT vs FFT)}
+\subsubsection{Założenia i przebieg}
+W ramach eksperymentu utworzono zestaw testujący długość i szybkość konwergencji funkcji. Zebrano czasy wykonywania w zależności od stopnia $N=2^n$ transformat (złożoność $O(N \log N)$) w opozycji do ich standardowych implementacji $O(N^2)$. Poniżej zaprezentowano zestawienie wyników dla naszych autorskich implementacji.
+
+\subsubsection{Rezultaty}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+         \hline
+         \textbf{Długość wektora (N)} & \textbf{Czas własnego DFT [s]} & \textbf{Czas własnego FFT [s]} \\ \hline
+         256  & 0.0031 & 0.0020 \\ \hline
+         512  & 0.0100 & 0.0030 \\ \hline
+         1024 & 0.0385 & 0.0056 \\ \hline
+         4096 & 0.7226 & 0.0333 \\ \hline
+    \end{tabular}
+    \caption{Zestawienie porównawcze czasów wykonywania obu własnych podejść Dyskretnej Transformaty Fouriera}
+\end{table}
+
+Wyliczany błąd MSE pomiędzy gotowymi narzędziami \verb|Scipy| a własnymi implementacjami był rzędu $10^{-30}$ - co świadczy o absolutnym zachowaniu precyzji obliczeń zmiennoprzecinkowych z punktu widzenia fizyki. 
+Czasy wykonania jawnie wskazują na potężną zaletę używania algorytmów dekompozycyjnych (Szybkich). Klasyczna metoda rośnie potęgowo spowalniając i zawieszając systemy operacyjne dla $N>8000$, w czasie gdy FFT wymaga na takie operacje jedynie setnych części sekundy.
+
+\newpage
+\section{Wnioski}
+Zaimplementowane transformacje Fouriera, Kosinusowe oraz Walsha-Hadamarda powalają na sprawną dekompozycję sygnałów z dziedziny czasu na wybrane przez nas częstotliwości i ortogonalne składowe bazowe.\\
+Możliwość wizualizacji za pomocą trybu Moduł/Faza w doskonały sposób ukazuje rzeczywisty rozkład amplitudowy - pomijając zjawiska przesunięć oraz ułatwia odczyt składowych sygnałów złożonych.\\
+Implementacja klasycznych form transformat udowadnia, dlaczego tak rzadko stosuje się je we współczesnych narzędziach - ich czas rośnie w czasie wielomianowym ($N^2$), co kompletnie dyskwalifikuje je w ujęciach Real-Time (na bieżąco). Szybkie transformaty jednak wprowadzają ograniczenie - liczba próbek poddawana przekształceniu w danym cyklu musi być potęgą dwójki.\\
+Użycie bibliotek takich jak wbudowane do \verb|scipy| i \verb|numpy| weryfikuje naszą pewność co do działania aplikacji, jednak pisanie ich z definicji bądź decymacji z czasem (DIT) stanowi najlepszą formę zapoznania się z cyfrowym przetwarzaniem sygnałów "pod maską" aparatury naukowej.
+
+\begin{document}
+\clearpage\maketitle
+\thispagestyle{empty}
+\newpage
+\setcounter{page}{1}
+
+
+\end{document}
