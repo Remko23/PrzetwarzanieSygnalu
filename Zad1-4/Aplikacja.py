@@ -40,7 +40,7 @@ class Aplikacja(tk.Tk):
             "s9": "Skok jednostkowy (s9)",
             "s10": "Impuls jednostkowy (s10)",
             "s11": "Szum impulsowy (s11)",
-            "s12": "Testowy sygnał zespolony (s12)",
+            "s12": "Sygnał zespolony (s12)",
             "s13": "Sygnał złożony S1 (s13)",
             "s14": "Sygnał złożony S2 (s14)",
             "s15": "Sygnał złożony S3 (s15)"
@@ -175,13 +175,13 @@ class Aplikacja(tk.Tk):
         self.wybor_transformacji.grid(row=0, column=1, sticky=tk.W, pady=5)
         self.wybor_transformacji.bind("<<ComboboxSelected>>", self.aktualizuj_stan_decymacji)
 
-        ttk.Label(ramka_trans, text="Dziedzina decymacji (dla FFT):").grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.label_dziedzina = ttk.Label(ramka_trans, text="Dziedzina decymacji:")
         self.wybor_dziedziny = ttk.Combobox(ramka_trans, values=[
             "W dziedzinie czasu (DIT)",
             "W dziedzinie częstotliwości (DIF)"
-        ], state="disabled", width=40)
+        ], state="readonly", width=40)
         self.wybor_dziedziny.current(0)
-        self.wybor_dziedziny.grid(row=1, column=1, sticky=tk.W, pady=5)
+
 
         ttk.Label(ramka_trans, text="Wybierz implementację:").grid(row=2, column=0, sticky=tk.W, pady=5)
         self.wybor_implementacji = ttk.Combobox(ramka_trans, values=[
@@ -439,9 +439,11 @@ class Aplikacja(tk.Tk):
 
     def aktualizuj_stan_decymacji(self, event=None):
         if self.wybor_transformacji.get() == "Szybka Transformacja Fouriera (FFT)":
-            self.wybor_dziedziny.config(state="readonly")
+            self.label_dziedzina.grid(row=1, column=0, sticky=tk.W, pady=5)
+            self.wybor_dziedziny.grid(row=1, column=1, sticky=tk.W, pady=5)
         else:
-            self.wybor_dziedziny.config(state="disabled")
+            self.label_dziedzina.grid_remove()
+            self.wybor_dziedziny.grid_remove()
 
     def _zbuduj_interfejs_parametrow(self, ramka_rodzica, slownik_parametrow, kod_sygnalu):
         for widzet in ramka_rodzica.winfo_children():
@@ -455,7 +457,7 @@ class Aplikacja(tk.Tk):
         if kod_sygnalu not in ["s10", "s11"]:
             wymagane_parametry.extend([
                 ('czas_poczatkowy', 'Czas początkowy', '0.0'),
-                ('czas_trwania', 'Czas trwania', '1.0')
+                ('czas_trwania', 'Czas trwania', '1.024')
             ])
             if kod_sygnalu in ["s3", "s4", "s5", "s6", "s7", "s8", "s12"]:
                 wymagane_parametry.append(('okres', 'Okres', '1.0'))

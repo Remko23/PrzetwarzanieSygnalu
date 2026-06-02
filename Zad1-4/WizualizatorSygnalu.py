@@ -37,6 +37,8 @@ class WizualizatorSygnalu:
 
         if czy_widmo:
             os_x = np.arange(liczba_probek) * generator_sygnalu.czestotliwosc_probkowania / liczba_probek
+            os_x = os_x[:liczba_probek]
+            probki = probki[:liczba_probek]
             etykieta_x = "Częstotliwość (Hz)"
         else:
             os_x = np.arange(liczba_probek) / generator_sygnalu.czestotliwosc_probkowania
@@ -52,14 +54,13 @@ class WizualizatorSygnalu:
             WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, os_czasowa, os_histogramu, liczba_przedzialow, "Amplituda", "cyan", czy_dyskretny, etykieta_x, czy_widmo)
             os_czasowa.set_title("Przebieg sygnału")
             os_histogramu.set_title("Histogram")
-            wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+            wykres.tight_layout(pad=2.0, h_pad=2.5, rect=(0, 0, 1, 0.95))
             wykresy.append(("Sygnał Rzeczywisty", wykres))
         else:
             # Sygnal zespolony
             for typ_wykresu in ['rzecz_uroj', 'modul_faza']:
                 wykres, osie = plt.subplots(2, 2, figsize=(12, 10))
                 wykres.patch.set_facecolor('#2b2b2b')
-                wykres.suptitle(f"{tytul} - {typ_wykresu.upper()}")
 
                 if typ_wykresu == 'rzecz_uroj':
                     WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, osie[0, 0], osie[0, 1], liczba_przedzialow, "Część Rzeczywista", "cyan", czy_dyskretny, etykieta_x, czy_widmo)
@@ -73,8 +74,7 @@ class WizualizatorSygnalu:
                     osie[0, 0].set_title("Moduł (Abs)")
                     osie[1, 0].set_title("Faza (Angle)")
                     wykresy.append(("Moduł/Faza", wykres))
-                
-                wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+                wykres.tight_layout(pad=2.0, h_pad=2.5)
 
         return wykresy
 
@@ -109,7 +109,7 @@ class WizualizatorSygnalu:
         os_histogramu.set_ylabel("Częstość")
         os_histogramu.set_title("Histogram wyniku konwersji")
         
-        wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+        wykres.tight_layout(pad=2.0, h_pad=2.5, rect=(0, 0, 1, 0.95))
         return [("Wyniki Konwersji", wykres)]
 
     @staticmethod
@@ -156,6 +156,6 @@ class WizualizatorSygnalu:
             for spine in ax.spines.values():
                 spine.set_color('gray')
                 
-        wykres.tight_layout(rect=(0, 0.03, 1, 0.95))
+        wykres.tight_layout(pad=2.0, h_pad=2.5, rect=(0, 0, 1, 0.95))
         return [("Wyniki Korelacji", wykres)]
 
