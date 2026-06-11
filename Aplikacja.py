@@ -847,12 +847,12 @@ class Aplikacja(tk.Tk):
         except Exception as e:
             messagebox.showerror("Błąd wizualizacji transformaty", str(e))
 
-    def _dodaj_sekcje(self, kontener, tytul, elementy):
+    def _dodaj_sekcje(self, kontener, tytul, elementy, szerokosc_etykiety=30):
         tk.Label(kontener, text=tytul, font=("Arial", 12, "bold"), bg="#2b2b2b", fg="#4fc3f7").pack(anchor=tk.W, pady=(15, 5))
         for etykieta, wartosc in elementy:
             wiersz = tk.Frame(kontener, bg="#2b2b2b")
             wiersz.pack(fill=tk.X, pady=2)
-            tk.Label(wiersz, text=etykieta, font=("Arial", 10), bg="#2b2b2b", fg="#e0e0e0", width=30, anchor=tk.W).pack(side=tk.LEFT)
+            tk.Label(wiersz, text=etykieta, font=("Arial", 10), bg="#2b2b2b", fg="#e0e0e0", width=szerokosc_etykiety, anchor=tk.W).pack(side=tk.LEFT)
             tk.Label(wiersz, text=str(wartosc), font=("Consolas", 10), bg="#2b2b2b", fg="#ffffff", anchor=tk.W).pack(side=tk.LEFT)
         tk.Frame(kontener, height=1, bg="#555555").pack(fill=tk.X, pady=(10, 0))
 
@@ -913,8 +913,8 @@ class Aplikacja(tk.Tk):
             freq = idx * delta_f
             val = wynik[idx]
             val_str = f"{val.real:.4f} + {val.imag:.4f}j" if np.iscomplexobj(val) else f"{val:.4f}"
-            add_element(skok, f"Składowa #{i+1} (indeks {idx})", f"f = {freq:.2f} Hz  |  Wartość: {val_str}  |  Moduł: {modul[idx]:.4f}")
-        self._dodaj_sekcje(kontener, "Top 5 Dominujących Składowych", skok)
+            add_element(skok, f"#{i+1}", f"f = {freq:.2f} Hz  |  Wartość: {val_str}  |  Moduł: {modul[idx]:.4f}")
+        self._dodaj_sekcje(kontener, "Top 5 Dominujących Składowych", skok, szerokosc_etykiety=5)
 
     def wykonaj_benchmark(self):
         try:
