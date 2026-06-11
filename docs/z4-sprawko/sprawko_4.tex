@@ -56,52 +56,205 @@ Do głównego kodu programu wprowadzono:
 \end{itemize}
 
 \section{Eksperymenty i wyniki}
-\subsection{Eksperyment 1: Weryfikacja wizualizacji na sygnałach złożonych}
+\subsection{Eksperyment 1: Transformacje i ich transformacje odwrotne}
 \subsubsection{Założenia i przebieg}
-W oparciu o aplikację, wygenerowano sygnały testowe (S1, S2, S3) będące sumą dwóch lub trzech sinusoid o różnych, starannie dobranych parametrach i określonej częstotliwości próbkowania $f_{pr} = 16$. Wygenerowano transformaty metodą FFT i zaobserwowano rozmieszczenie prążków w widmie Moduł/Faza.
+W ramach eksperymentu dla wszystkich trzech funkcji złożonych funkcji S1, S2 i S3 wykonano transformaty: odpowiednio Fouriera, Kosinusowa i Walsha-Hadamarda, a następnie wykonano transformaty odwrotne (w przypadku Kosinusowej i Walsha-Hadamarda transformata odwrotna jest taka sama jak zwykła transformata) w celu zbadania poprawności działania programu.
 
 \subsubsection{Rezultaty}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\linewidth]{ex1/widmo_s1.png}
-    \caption{Transformata sygnału (S1) - Widmo amplitudowe i fazowe}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/S1.png}
+        \caption{Sygnał S1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/S2.png}
+        \caption{Sygnał S2}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/S3.png}
+        \caption{Sygnał S3}
+    \end{subfigure}
+    
+    \caption{Oryginalne sygnały S1, S2 i S3 (przed transformacjami)}
 \end{figure}
 
-W widmie amplitudowym z łatwością możemy zidentyfikować precyzyjne prążki zlokalizowane na częstotliwościach występujących w poleceniu. Składowe różniące się amplitudami i początkową fazą poprawnie odwzorowują się na wykresie modułu w postaci pików.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s1_DFT_1.png}
+        \caption{Transformata: Rzeczywista/Urojona}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s1_DFT_2.png}
+        \caption{Transformata: Moduł/Faza}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s1_DFT_odw.png}
+        \caption{Odwrotna Transformata}
+    \end{subfigure}
+    
+    \caption{Transformata Fouriera i odwrotna transformata Fouriera sygnału S1}
+\end{figure}
 
-\subsection{Eksperyment 2: Porównanie czasów wykonania (własna implementacja DFT vs FFT)}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s2_DCT.png}
+        \caption{Transformata: Rzeczywista}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s2_DCT_odw.png}
+        \caption{Odwrotna Transformata}
+    \end{subfigure}
+    
+    \caption{Transformata Kosinusowa i jej odwrotność dla sygnału S2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s3_WHT.png}
+        \caption{Transformata: Rzeczywista}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex1/s3_WHT_odw.png}
+        \caption{Odwrotna Transformata}
+    \end{subfigure}
+    
+    \caption{Transformata Walsha-Hadamarda i jej odwrotność dla sygnału S3}
+\end{figure}
+
+ Wyniki odwrotnych transformacji pokrywają się z oryginalnymi wykresami. Oznacza to, że transformaty oraz ich transformaty odwrotne zostały prawidłowo zaprogramowane i działają zgodnie z założeniami.
+
+\newpage
+\subsection{Eksperyment 2: Porównanie złożoności czasowej algorytmów}
 \subsubsection{Założenia i przebieg}
-W ramach eksperymentu utworzono zestaw testujący długość i szybkość konwergencji funkcji. Zebrano czasy wykonywania w zależności od stopnia $N=2^n$ transformat (złożoność $O(N \log N)$) w opozycji do ich standardowych implementacji $O(N^2)$. Poniżej zaprezentowano zestawienie wyników dla naszych autorskich implementacji.
+W ramach eksperymentu dla wszystkich trzech funkcji złożonych funkcji S1, S2 i S3 przeprowadzono porównanie transformaty Fouriera, Kosinusowej i Walsha-Hadamarda oraz ich wersjy szybkich.
 
 \subsubsection{Rezultaty}
-\begin{table}[H]
+\begin{figure}[H]
     \centering
-    \begin{tabular}{|c|c|c|}
-         \hline
-         \textbf{Długość wektora (N)} & \textbf{Czas własnego DFT [s]} & \textbf{Czas własnego FFT [s]} \\ \hline
-         256  & 0.0031 & 0.0020 \\ \hline
-         512  & 0.0100 & 0.0030 \\ \hline
-         1024 & 0.0385 & 0.0056 \\ \hline
-         4096 & 0.7226 & 0.0333 \\ \hline
-    \end{tabular}
-    \caption{Zestawienie porównawcze czasów wykonywania obu własnych podejść Dyskretnej Transformaty Fouriera}
-\end{table}
+    \includegraphics[width=0.7\linewidth]{ex2/plot_S1.png}
+    \caption{Wykres porównujący czas wykonywania poszczególnych transformat dla liczby próbek 512-8192 dla sygnału S1}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{ex2/plot_S2.png}
+    \caption{Wykres porównujący czas wykonywania poszczególnych transformat dla liczby próbek 512-8192 dla sygnału S2}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{ex2/plot_S3.png}
+    \caption{Wykres porównujący czas wykonywania poszczególnych transformat dla liczby próbek 512-8192 dla sygnału S3}
+\end{figure}
 
-Wyliczany błąd MSE pomiędzy gotowymi narzędziami \verb|Scipy| a własnymi implementacjami był rzędu $10^{-30}$ - co świadczy o absolutnym zachowaniu precyzji obliczeń zmiennoprzecinkowych z punktu widzenia fizyki. 
-Czasy wykonania jawnie wskazują na potężną zaletę używania algorytmów dekompozycyjnych (Szybkich). Klasyczna metoda rośnie potęgowo spowalniając i zawieszając systemy operacyjne dla $N>8000$, w czasie gdy FFT wymaga na takie operacje jedynie setnych części sekundy.
+Zauważamy, że zgodnie z przewidywaniami szybkie warianty transformat miały znacznie niższą złożoność czasową. Co ciekawe najwolniejszą transformatą okazała się transformata kosinusowa \verb|DCT| a najszybszą zazwyczaj był jej szybki odpowiednik \verb|FCT|, czasem ustępując jedynie szybkiej transformacie Walsha-Hadamarda \verb|FWHT|. Zauważamy marginalne różnice szybkiej transformaty Fouriera \verb|FFT| w dziedzinie częstotliwości względem dziedziny czasu.
+
+\subsection{Eksperyment 3: Porównanie wyników transformat i szybkich transformat}
+\subsubsection{Założenia i przebieg}
+W ramach eksperymentu porównano wyniki transformat Fouriera, Kosinusowej i Walsha-Hadamarda z ich szybkimi odpowiednikami dla sygnału S3.
+
+\subsubsection{Rezultaty}
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_DFT_1.png}
+        \caption{DFT - Rzeczywista/Urojona}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_DFT_2.png}
+        \caption{DFT - Moduł/Faza}
+    \end{subfigure}
+    \vspace{0.5cm}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FFT_1.png}
+        \caption{FFT DIT - Rzeczywista/Urojona}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FFT_2.png}
+        \caption{FFT DIT - Moduł/Faza}
+    \end{subfigure}
+    \vspace{0.5cm}
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FFT_1_DIF.png}
+        \caption{FFT DIF - Rzeczywista/Urojona}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FFT_2_DIF.png}
+        \caption{FFT DIF - Moduł/Faza}
+    \end{subfigure}
+    
+    \caption{Porównanie Transformaty Fouriera DFT i Szybkiej Transformaty Kosinusowej FFT (w dziedzinie czasu DIT oraz dziedzinie częstotliwości DIF) dla sygnału S3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_DCT.png}
+        \caption{DCT}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FCT.png}
+        \caption{FCT}
+    \end{subfigure}
+    
+    \caption{Porównanie Transformaty Kosinusowej DCT i Szybkiej Transformaty Kosinusowej FCT dla sygnału S3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_WHT.png}
+        \caption{WHT}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{ex3/tr_FWHT.png}
+        \caption{FWHT}
+    \end{subfigure}
+    
+    \caption{Porównanie Transformaty Walsha-Hadamarda WHT i Szybkiej Transformaty Walsha-Hadamarda FWHT dla sygnału S3}
+\end{figure}
+
+Na podstawie powyższych wyników zauważamy, że transformaty dają takie same wyniki co ich szybkie odpowiedniki, jak również takie same wyniki dla Szybkich Transformat Fouriera w różnych dziedzinach. Jest to zgodne z założeniami i potwierdza poprawność zaimplementowanych transformat.
 
 \newpage
 \section{Wnioski}
-Zaimplementowane transformacje Fouriera, Kosinusowe oraz Walsha-Hadamarda powalają na sprawną dekompozycję sygnałów z dziedziny czasu na wybrane przez nas częstotliwości i ortogonalne składowe bazowe.\\
+Zaimplementowane transformacje Fouriera, Kosinusowe oraz Walsha-Hadamarda pozwalają na sprawną dekompozycję sygnałów z dziedziny czasu na wybrane przez nas częstotliwości i ortogonalne składowe bazowe.\\
 Możliwość wizualizacji za pomocą trybu Moduł/Faza w doskonały sposób ukazuje rzeczywisty rozkład amplitudowy - pomijając zjawiska przesunięć oraz ułatwia odczyt składowych sygnałów złożonych.\\
 Implementacja klasycznych form transformat udowadnia, dlaczego tak rzadko stosuje się je we współczesnych narzędziach - ich czas rośnie w czasie wielomianowym ($N^2$), co kompletnie dyskwalifikuje je w ujęciach Real-Time (na bieżąco). Szybkie transformaty jednak wprowadzają ograniczenie - liczba próbek poddawana przekształceniu w danym cyklu musi być potęgą dwójki.\\
-Użycie bibliotek takich jak wbudowane do \verb|scipy| i \verb|numpy| weryfikuje naszą pewność co do działania aplikacji, jednak pisanie ich z definicji bądź decymacji z czasem (DIT) stanowi najlepszą formę zapoznania się z cyfrowym przetwarzaniem sygnałów "pod maską" aparatury naukowej.
-
-\begin{document}
-\clearpage\maketitle
-\thispagestyle{empty}
-\newpage
-\setcounter{page}{1}
+Użycie bibliotek takich jak wbudowane do \verb|scipy| i \verb|numpy| weryfikuje naszą pewność co do działania aplikacji.
 
 
 \end{document}

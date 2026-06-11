@@ -9,6 +9,10 @@ from WizualizatorSygnalu import WizualizatorSygnalu
 from KonwerterSygnalu import KonwerterSygnalu
 from FiltrSygnalu import FiltrSygnalu
 from CzujnikOdleglosci import CzujnikOdleglosci
+from TransformacjaSygnalu import TransformacjaSygnalu
+import time
+import scipy.fft as sp_fft
+import scipy.linalg as sp_linalg
 import matplotlib.pyplot as plt
 
 class Aplikacja(tk.Tk):
@@ -20,7 +24,9 @@ class Aplikacja(tk.Tk):
         self.zastosuj_ciemny_motyw()
 
         self.sygnal_glowny = None
+        self.ostatnia_transformata = None
         self.czy_dyskretny = False
+        self.czy_widmo = False
 
         self.typy_sygnalow = {
             "s1": "Szum o rozkładzie jednostajnym (s1)",
@@ -34,13 +40,18 @@ class Aplikacja(tk.Tk):
             "s9": "Skok jednostkowy (s9)",
             "s10": "Impuls jednostkowy (s10)",
             "s11": "Szum impulsowy (s11)",
-            "s12": "Testowy sygnał zespolony (s12)"
+            "s12": "Sygnał zespolony (s12)",
+            "s13": "Sygnał złożony S1 (s13)",
+            "s14": "Sygnał złożony S2 (s14)",
+            "s15": "Sygnał złożony S3 (s15)"
         }
 
         self.kody_sygnalow = {v: k for k, v in self.typy_sygnalow.items()}
         self.pola_parametrow_a = {}
         self.pola_parametrow_b = {}
         self.uzyj_glownego_jako_a = tk.BooleanVar(value=False)
+        self.uzyj_glownego_trans = tk.BooleanVar(value=True)
+        self.pola_parametrow_trans = {}
 
         self.utworz_widzety()
 
@@ -127,6 +138,64 @@ class Aplikacja(tk.Tk):
 
         zakladka_korelacja = ttk.Frame(self.zakladki_lewe)
         self.zakladki_lewe.add(zakladka_korelacja, text="Korelacja")
+
+        zakladka_transformacje = ttk.Frame(self.zakladki_lewe)
+        self.zakladki_lewe.add(zakladka_transformacje, text="Transformacje")
+
+        ramka_trans_sygnal = ttk.LabelFrame(zakladka_transformacje, text="Sygnał wejściowy do transformacji", padding="10")
+        ramka_trans_sygnal.pack(fill=tk.X, pady=5)
+        
+        self.chk_uzyj_glownego_trans = ttk.Checkbutton(ramka_trans_sygnal, text="Użyj Sygnału Głównego z lewego panelu", 
+                                                 variable=self.uzyj_glownego_trans, 
+                                                 command=self.przelacz_uzycie_glownego_trans)
+        self.chk_uzyj_glownego_trans.grid(row=0, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        ttk.Label(ramka_trans_sygnal, text="Wybierz sygnał:").grid(row=1, column=0, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_trans = ttk.Combobox(ramka_trans_sygnal, values=list(self.typy_sygnalow.values()),
+                                            state="disabled", width=38)
+        self.wybor_sygnalu_trans.grid(row=1, column=1, sticky=tk.W, pady=2)
+        self.wybor_sygnalu_trans.bind("<<ComboboxSelected>>", self.przy_wyborze_sygnalu_trans)
+
+        self.ramka_parametrow_trans = ttk.Frame(ramka_trans_sygnal)
+        self.ramka_parametrow_trans.grid(row=2, column=0, columnspan=2, sticky=tk.W, pady=2)
+
+        ramka_trans = ttk.LabelFrame(zakladka_transformacje, text="Operacje transformacji", padding="10")
+        ramka_trans.pack(fill=tk.X, pady=5)
+
+        ttk.Label(ramka_trans, text="Wybierz transformację:").grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.wybor_transformacji = ttk.Combobox(ramka_trans, values=[
+            "Transformacja Fouriera (DFT)",
+            "Szybka Transformacja Fouriera (FFT)",
+            "Transformacja Kosinusowa (DCT)",
+            "Szybka Transformacja Kosinusowa (FCT)",
+            "Transformacja Walsha-Hadamarda (WHT)",
+            "Szybka Transformacja Walsha-Hadamarda (FWHT)"
+        ], state="readonly", width=40)
+        self.wybor_transformacji.current(0)
+        self.wybor_transformacji.grid(row=0, column=1, sticky=tk.W, pady=5)
+        self.wybor_transformacji.bind("<<ComboboxSelected>>", self.aktualizuj_stan_decymacji)
+
+        self.label_dziedzina = ttk.Label(ramka_trans, text="Dziedzina decymacji:")
+        self.wybor_dziedziny = ttk.Combobox(ramka_trans, values=[
+            "W dziedzinie czasu (DIT)",
+            "W dziedzinie częstotliwości (DIF)"
+        ], state="readonly", width=40)
+        self.wybor_dziedziny.current(0)
+
+
+        ttk.Label(ramka_trans, text="Wybierz implementację:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.wybor_implementacji = ttk.Combobox(ramka_trans, values=[
+            "Własna implementacja",
+            "Biblioteka gotowa (Scipy)"
+        ], state="readonly", width=40)
+        self.wybor_implementacji.current(0)
+        self.wybor_implementacji.grid(row=2, column=1, sticky=tk.W, pady=5)
+
+        self.przycisk_transformuj = ttk.Button(ramka_trans, text="Wykonaj transformację i porównaj", command=self.wykonaj_transformacje)
+        self.przycisk_transformuj.grid(row=3, column=0, pady=10, sticky=tk.E, padx=5)
+
+        self.przycisk_benchmark = ttk.Button(ramka_trans, text="Benchmark (czas N=512..8192)", command=self.wykonaj_benchmark)
+        self.przycisk_benchmark.grid(row=3, column=1, pady=10, sticky=tk.W, padx=5)
 
         ramka_a = ttk.LabelFrame(zakladka_korelacja, text="Sygnał A", padding="10")
         ramka_a.pack(fill=tk.X, pady=5)
@@ -344,7 +413,7 @@ class Aplikacja(tk.Tk):
 
         ttk.Label(ramka_parametrow_globalnych, text="Liczba próbek w oknie:").grid(row=0, column=0, sticky=tk.W, padx=5)
         self.pole_liczba_probek = ttk.Entry(ramka_parametrow_globalnych, width=10)
-        self.pole_liczba_probek.insert(0, "1000")
+        self.pole_liczba_probek.insert(0, "1024")
         self.pole_liczba_probek.grid(row=0, column=1, sticky=tk.W, padx=5)
 
         ttk.Label(ramka_parametrow_globalnych, text="Przedziały histogramu:").grid(row=1, column=0, sticky=tk.W, padx=5,
@@ -353,8 +422,13 @@ class Aplikacja(tk.Tk):
         self.pole_liczba_przedzialow.insert(0, "20")
         self.pole_liczba_przedzialow.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
 
+        ttk.Label(ramka_parametrow_globalnych, text="Częstotliwość próbk. (Hz):").grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        self.pole_czestotliwosc_probkowania = ttk.Entry(ramka_parametrow_globalnych, width=10)
+        self.pole_czestotliwosc_probkowania.insert(0, "1000.0")
+        self.pole_czestotliwosc_probkowania.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+
         ttk.Button(ramka_parametrow_globalnych, text="Wizualizuj (Wykres + Histogram)",
-                   command=self.wizualizuj_sygnal).grid(row=2, column=0, columnspan=2, pady=10)
+                   command=self.wizualizuj_sygnal).grid(row=3, column=0, columnspan=2, pady=10)
 
         self.pole_tekstowe_logow = tk.Text(ramka_akcji, height=10, state=tk.DISABLED, bg="#3c3f41", fg="#e0e0e0",
                                            insertbackground="#ffffff")
@@ -365,6 +439,14 @@ class Aplikacja(tk.Tk):
         self.pole_tekstowe_logow.insert(tk.END, wiadomosc + "\n")
         self.pole_tekstowe_logow.see(tk.END)
         self.pole_tekstowe_logow.config(state=tk.DISABLED)
+
+    def aktualizuj_stan_decymacji(self, event=None):
+        if self.wybor_transformacji.get() == "Szybka Transformacja Fouriera (FFT)":
+            self.label_dziedzina.grid(row=1, column=0, sticky=tk.W, pady=5)
+            self.wybor_dziedziny.grid(row=1, column=1, sticky=tk.W, pady=5)
+        else:
+            self.label_dziedzina.grid_remove()
+            self.wybor_dziedziny.grid_remove()
 
     def _zbuduj_interfejs_parametrow(self, ramka_rodzica, slownik_parametrow, kod_sygnalu):
         for widzet in ramka_rodzica.winfo_children():
@@ -378,7 +460,7 @@ class Aplikacja(tk.Tk):
         if kod_sygnalu not in ["s10", "s11"]:
             wymagane_parametry.extend([
                 ('czas_poczatkowy', 'Czas początkowy', '0.0'),
-                ('czas_trwania', 'Czas trwania', '1.0')
+                ('czas_trwania', 'Czas trwania', '1.024')
             ])
             if kod_sygnalu in ["s3", "s4", "s5", "s6", "s7", "s8", "s12"]:
                 wymagane_parametry.append(('okres', 'Okres', '1.0'))
@@ -432,6 +514,21 @@ class Aplikacja(tk.Tk):
             self.wybor_sygnalu_a.config(state="readonly")
             self.przy_wyborze_sygnalu_a(None)
 
+    def przy_wyborze_sygnalu_trans(self, zdarzenie):
+        nazwa_sygnalu = self.wybor_sygnalu_trans.get()
+        kod_sygnalu = self.kody_sygnalow.get(nazwa_sygnalu)
+        self._zbuduj_interfejs_parametrow(self.ramka_parametrow_trans, self.pola_parametrow_trans, kod_sygnalu)
+
+    def przelacz_uzycie_glownego_trans(self):
+        if self.uzyj_glownego_trans.get():
+            self.wybor_sygnalu_trans.config(state="disabled")
+            for w in self.ramka_parametrow_trans.winfo_children():
+                w.destroy()
+            self.pola_parametrow_trans.clear()
+        else:
+            self.wybor_sygnalu_trans.config(state="readonly")
+            self.przy_wyborze_sygnalu_trans(None)
+
     def _pobierz_przetworzone_parametry(self, slownik_parametrow):
         przetworzone = {}
         for klucz, pole_wprowadzania in slownik_parametrow.items():
@@ -454,8 +551,10 @@ class Aplikacja(tk.Tk):
         kod_sygnalu = self.kody_sygnalow[nazwa_sygnalu]
         try:
             parametry = self._pobierz_przetworzone_parametry(self.pola_parametrow_1)
-            self.sygnal_glowny = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu, **parametry)
+            fs = float(self.pole_czestotliwosc_probkowania.get())
+            self.sygnal_glowny = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu, czestotliwosc_probkowania=fs, **parametry)
             self.czy_dyskretny = kod_sygnalu in ["s10", "s11"]
+            self.czy_widmo = False
             self.loguj_wiadomosc(f"Wygenerowano sygnał główny: {nazwa_sygnalu} z parametrami {parametry}")
             messagebox.showinfo("Sukces", "Sygnał główny został utworzony.")
         except Exception as e:
@@ -476,7 +575,8 @@ class Aplikacja(tk.Tk):
         kod_sygnalu_2 = self.kody_sygnalow[nazwa_sygnalu_2]
         try:
             parametry_2 = self._pobierz_przetworzone_parametry(self.pola_parametrow_2)
-            sygnal_2 = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu_2, **parametry_2)
+            fs = float(self.pole_czestotliwosc_probkowania.get())
+            sygnal_2 = GeneratorSygnalu(zrodlo_sygnalu=kod_sygnalu_2, czestotliwosc_probkowania=fs, **parametry_2)
 
             if operacja_tekst == "Dodawanie":
                 self.sygnal_glowny = self.sygnal_glowny.dodaj_sygnal(sygnal_2)
@@ -493,6 +593,114 @@ class Aplikacja(tk.Tk):
             messagebox.showinfo("Sukces", "Zaktualizowano sygnał główny operatorem.")
         except Exception as e:
             messagebox.showerror("Błąd", str(e))
+
+    def wykonaj_transformacje(self):
+        try:
+            liczba_probek = int(self.pole_liczba_probek.get())
+        except ValueError:
+            messagebox.showerror("Błąd", "Nieprawidłowa liczba próbek w prawym panelu.")
+            return
+
+        if self.uzyj_glownego_trans.get():
+            if not self.sygnal_glowny:
+                messagebox.showerror("Błąd", "Najpierw wygeneruj sygnał główny!")
+                return
+            self.sygnal_glowny.resetuj()
+            probki_x = np.array([next(self.sygnal_glowny) for _ in range(liczba_probek)])
+            fp = self.sygnal_glowny.czestotliwosc_probkowania
+        else:
+            nazwa_syg = self.wybor_sygnalu_trans.get()
+            if not nazwa_syg:
+                messagebox.showerror("Błąd", "Wybierz sygnał do transformacji!")
+                return
+            kod_syg = self.kody_sygnalow[nazwa_syg]
+            parametry = self._pobierz_przetworzone_parametry(self.pola_parametrow_trans)
+            fs = float(self.pole_czestotliwosc_probkowania.get())
+            tmp_sygnal = GeneratorSygnalu(zrodlo_sygnalu=kod_syg, czestotliwosc_probkowania=fs, **parametry)
+            probki_x = np.array([next(tmp_sygnal) for _ in range(liczba_probek)])
+            fp = tmp_sygnal.czestotliwosc_probkowania
+
+        typ_trans = self.wybor_transformacji.get()
+        dziedzina = self.wybor_dziedziny.get()
+        implementacja = self.wybor_implementacji.get()
+        
+        info_dec = f" [{dziedzina}]" if typ_trans == "Szybka Transformacja Fouriera (FFT)" else ""
+        self.loguj_wiadomosc(f"Rozpoczynanie transformacji: {typ_trans}{info_dec} ({implementacja}) na N={liczba_probek}...")
+        
+        start_time = time.time()
+        wynik = None
+        wynik_scipy = None
+        scipy_time = 0
+
+        try:
+            is_power_of_2 = (liczba_probek & (liczba_probek - 1)) == 0 and liczba_probek > 0
+            
+            if "Walsha-Hadamarda" in typ_trans and not is_power_of_2:
+                raise ValueError("Dla Transformacji Walsha-Hadamarda liczba próbek musi być potęgą liczby 2 (np. 256, 512, 1024). Zmień parametr 'Liczba próbek'.")
+                
+            if "Szybka" in typ_trans and not is_power_of_2:
+                raise ValueError("Dla szybkiej transformacji liczba próbek musi być potęgą liczby 2 (np. 512, 1024). Zmień parametr 'Liczba próbek'.")
+
+            t0_sc = time.time()
+            if "Fouriera" in typ_trans:
+                wynik_scipy = sp_fft.fft(probki_x) / liczba_probek
+            elif "Kosinusowa" in typ_trans:
+                wynik_scipy = sp_fft.dct(probki_x, type=2, norm='ortho')
+            elif "Walsha-Hadamarda" in typ_trans:
+                H = sp_linalg.hadamard(liczba_probek)
+                wynik_scipy = np.dot(H, probki_x) / liczba_probek
+            scipy_time = time.time() - t0_sc
+
+            czas_wlasny = None
+            if implementacja == "Biblioteka gotowa (Scipy)":
+                wynik = wynik_scipy
+                czas_wlasny = scipy_time
+            else:
+                t0_own = time.time()
+                if typ_trans == "Transformacja Fouriera (DFT)":
+                    wynik = TransformacjaSygnalu.dyskretna_transformacja_fouriera(probki_x)
+                elif typ_trans == "Szybka Transformacja Fouriera (FFT)":
+                    if "czasu" in dziedzina:
+                        wynik = TransformacjaSygnalu.szybka_transformacja_fouriera_z_decymacja_w_czasie(probki_x)
+                    else:
+                        wynik = TransformacjaSygnalu.szybka_transformacja_fouriera_z_decymacja_w_czestotliwosci(probki_x)
+                elif typ_trans == "Transformacja Kosinusowa (DCT)":
+                    wynik = TransformacjaSygnalu.dyskretna_transformacja_kosinusowa(probki_x)
+                elif typ_trans == "Szybka Transformacja Kosinusowa (FCT)":
+                    wynik = TransformacjaSygnalu.szybka_transformacja_kosinusowa(probki_x)
+                elif typ_trans == "Transformacja Walsha-Hadamarda (WHT)":
+                    wynik = TransformacjaSygnalu.transformacja_walsha_hadamarda(probki_x)
+                elif typ_trans == "Szybka Transformacja Walsha-Hadamarda (FWHT)":
+                    wynik = TransformacjaSygnalu.szybka_transformacja_walsha_hadamarda(probki_x)
+                
+                czas_wlasny = time.time() - t0_own
+                
+            if implementacja == "Biblioteka gotowa (Scipy)":
+                self.loguj_wiadomosc(f"Zakończono. Czas Scipy: {scipy_time:.6f} s")
+            else:
+                self.loguj_wiadomosc(f"Zakończono. Czas własny: {czas_wlasny:.6f} s, Czas Scipy: {scipy_time:.6f} s")
+                if wynik_scipy is not None:
+                    mse = np.mean(np.abs(wynik - wynik_scipy)**2)
+                    self.loguj_wiadomosc(f"Błąd średniokwadratowy względem Scipy (MSE): {mse:.2e}")
+                
+            self.ostatnia_transformata = {
+                'wynik': wynik,
+                'wynik_scipy': wynik_scipy,
+                'fp': fp,
+                'typ_trans': typ_trans,
+                'implementacja': implementacja,
+                'dziedzina': dziedzina,
+                'liczba_probek': liczba_probek,
+                'probki_x': probki_x,
+                'czas_wlasny': czas_wlasny,
+                'czas_scipy': scipy_time
+            }
+            self.wizualizuj_transformacje()
+            
+        except ValueError as e:
+            messagebox.showerror("Błąd danych", str(e))
+        except Exception as e:
+            messagebox.showerror("Błąd transformacji", str(e))
 
     def zapisz_sygnal(self):
         if not self.sygnal_glowny:
@@ -549,7 +757,8 @@ class Aplikacja(tk.Tk):
 
             wykresy = WizualizatorSygnalu.rysuj_wszystko(self.sygnal_glowny, liczba_probek=liczba_probek,
                                                          liczba_przedzialow=liczba_przedzialow,
-                                                         czy_dyskretny=self.czy_dyskretny)
+                                                         czy_dyskretny=self.czy_dyskretny,
+                                                         czy_widmo=self.czy_widmo)
             self.sygnal_glowny.resetuj()
 
             for tytul, wykres in wykresy:
@@ -574,6 +783,313 @@ class Aplikacja(tk.Tk):
 
         except Exception as e:
             messagebox.showerror("Błąd wizualizacji", str(e))
+
+    def wizualizuj_transformacje(self):
+        if not self.ostatnia_transformata:
+            messagebox.showerror("Błąd", "Brak danych z transformacji do wizualizacji!")
+            return
+
+        try:
+            wynik = self.ostatnia_transformata['wynik']
+            probki_x = self.ostatnia_transformata['probki_x']
+            fp = self.ostatnia_transformata['fp']
+            liczba_probek = self.ostatnia_transformata['liczba_probek']
+            
+            for zakladka in self.notatnik_wizualizacji.tabs():
+                self.notatnik_wizualizacji.forget(zakladka)
+
+            sygnal_we = GeneratorSygnalu.z_tablicy(probki_x, fp)
+            wykresy_we = WizualizatorSygnalu.rysuj_wszystko(sygnal_we, liczba_probek=liczba_probek,
+                                                         liczba_przedzialow=int(self.pole_liczba_przedzialow.get()),
+                                                         czy_dyskretny=self.czy_dyskretny,
+                                                         czy_widmo=False)
+            
+            for tytul, wykres in wykresy_we:
+                ramka = ttk.Frame(self.notatnik_wizualizacji)
+                self.notatnik_wizualizacji.add(ramka, text="Sygnał Wejściowy")
+                plotno = FigureCanvasTkAgg(wykres, master=ramka)
+                plotno.draw()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka)
+                pasek_narzedzi.update()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+                break 
+
+            tmp_sygnal = GeneratorSygnalu.z_tablicy(wynik, fp)
+            wykresy = WizualizatorSygnalu.rysuj_wszystko(tmp_sygnal, liczba_probek=liczba_probek,
+                                                         liczba_przedzialow=10,
+                                                         czy_dyskretny=self.czy_dyskretny,
+                                                         czy_widmo=True)
+
+            for tytul, wykres in wykresy:
+                ramka = ttk.Frame(self.notatnik_wizualizacji)
+                self.notatnik_wizualizacji.add(ramka, text=f"Transformata: {tytul}")
+                ramka_akcji = ttk.Frame(ramka)
+                ramka_akcji.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+                btn_odwroc = ttk.Button(ramka_akcji, text="Wykonaj transformację odwrotną", command=self.wykonaj_transformacje_odwrotna)
+                btn_odwroc.pack(side=tk.LEFT)
+
+                plotno = FigureCanvasTkAgg(wykres, master=ramka)
+                plotno.draw()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+                pasek_narzedzi = NavigationToolbar2Tk(plotno, ramka)
+                pasek_narzedzi.update()
+                plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+            self._pokaz_statystyki_transformacji()
+
+            self.loguj_wiadomosc(f"Wyświetlono wizualizację transformaty.")
+
+            if self.notatnik_wizualizacji.tabs():
+                self.notatnik_wizualizacji.select(0)
+
+        except Exception as e:
+            messagebox.showerror("Błąd wizualizacji transformaty", str(e))
+
+    def _dodaj_sekcje(self, kontener, tytul, elementy):
+        tk.Label(kontener, text=tytul, font=("Arial", 12, "bold"), bg="#2b2b2b", fg="#4fc3f7").pack(anchor=tk.W, pady=(15, 5))
+        for etykieta, wartosc in elementy:
+            wiersz = tk.Frame(kontener, bg="#2b2b2b")
+            wiersz.pack(fill=tk.X, pady=2)
+            tk.Label(wiersz, text=etykieta, font=("Arial", 10), bg="#2b2b2b", fg="#e0e0e0", width=30, anchor=tk.W).pack(side=tk.LEFT)
+            tk.Label(wiersz, text=str(wartosc), font=("Consolas", 10), bg="#2b2b2b", fg="#ffffff", anchor=tk.W).pack(side=tk.LEFT)
+        tk.Frame(kontener, height=1, bg="#555555").pack(fill=tk.X, pady=(10, 0))
+
+    def _pokaz_statystyki_transformacji(self):
+        dane = self.ostatnia_transformata
+        ramka_stat = ttk.Frame(self.notatnik_wizualizacji)
+        self.notatnik_wizualizacji.add(ramka_stat, text="Statystyki")
+        
+        plotno_scroll = tk.Canvas(ramka_stat, bg="#2b2b2b")
+        scrollbar = ttk.Scrollbar(ramka_stat, orient="vertical", command=plotno_scroll.yview)
+        kontener = tk.Frame(plotno_scroll, bg="#2b2b2b", padx=20, pady=20)
+
+        kontener.bind("<Configure>", lambda e: plotno_scroll.configure(scrollregion=plotno_scroll.bbox("all")))
+        plotno_scroll.create_window((0, 0), window=kontener, anchor="nw")
+        plotno_scroll.configure(yscrollcommand=scrollbar.set)
+        
+        plotno_scroll.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        def add_element(sekcja, etykieta, wartosc):
+            sekcja.append((etykieta, wartosc))
+
+        tk.Label(kontener, text="Wyniki numeryczne i statystyki", font=("Arial", 16, "bold"), bg="#2b2b2b", fg="#ffffff").pack(anchor=tk.W, pady=(0, 10))
+        
+        parametry = []
+        add_element(parametry, "Zastosowana implementacja", dane['implementacja'])
+        if dane['dziedzina']: add_element(parametry, "Dziedzina (dla FFT)", dane['dziedzina'])
+        add_element(parametry, "Liczba próbek N", dane['liczba_probek'])
+        add_element(parametry, "Częstotliwość próbkowania fp", f"{dane['fp']} Hz")
+        delta_f = dane['fp'] / dane['liczba_probek']
+        add_element(parametry, "Rozdzielczość częstotliwościowa Δf", f"{delta_f:.4f} Hz")
+        self._dodaj_sekcje(kontener, "Parametry transformacji", parametry)
+
+        czasy = []
+        add_element(czasy, "Czas własny algorytmu", f"{dane['czas_wlasny']:.6f} s" if dane['czas_wlasny'] is not None else "Brak")
+        add_element(czasy, "Czas biblioteki Scipy", f"{dane['czas_scipy']:.6f} s")
+        if dane['czas_wlasny'] and dane['czas_scipy'] > 0:
+            add_element(czasy, "Stosunek czasu (Własny/Scipy)", f"{(dane['czas_wlasny'] / dane['czas_scipy']):.2f}x")
+        self._dodaj_sekcje(kontener, "Porównanie czasów", czasy)
+
+        bledy = []
+        wynik = dane['wynik']
+        wynik_scipy = dane['wynik_scipy']
+        if wynik_scipy is not None and dane['implementacja'] != "Biblioteka gotowa (Scipy)":
+            mse = np.mean(np.abs(wynik - wynik_scipy)**2)
+            max_err = np.max(np.abs(wynik - wynik_scipy))
+            add_element(bledy, "Błąd średniokwadratowy (MSE)", f"{mse:.4e}")
+            add_element(bledy, "Maksymalny błąd bezwzględny", f"{max_err:.4e}")
+        else:
+            add_element(bledy, "Weryfikacja", "Nie dotyczy (użyto Scipy)")
+        self._dodaj_sekcje(kontener, "Weryfikacja poprawności (vs Scipy)", bledy)
+
+        skok = []
+        modul = np.abs(wynik)
+        indeksy_sort = np.argsort(modul)[::-1]
+        for i in range(min(5, len(indeksy_sort))):
+            idx = indeksy_sort[i]
+            freq = idx * delta_f
+            val = wynik[idx]
+            val_str = f"{val.real:.4f} + {val.imag:.4f}j" if np.iscomplexobj(val) else f"{val:.4f}"
+            add_element(skok, f"Składowa #{i+1} (indeks {idx})", f"f = {freq:.2f} Hz  |  Wartość: {val_str}  |  Moduł: {modul[idx]:.4f}")
+        self._dodaj_sekcje(kontener, "Top 5 Dominujących Składowych", skok)
+
+    def wykonaj_benchmark(self):
+        try:
+            if self.uzyj_glownego_trans.get():
+                if not self.sygnal_glowny:
+                    messagebox.showerror("Błąd", "Najpierw wygeneruj sygnał główny!")
+                    return
+                def _zbierz_probki(N):
+                    self.sygnal_glowny.resetuj()
+                    return np.array([next(self.sygnal_glowny) for _ in range(N)])
+            else:
+                nazwa_syg = self.wybor_sygnalu_trans.get()
+                if not nazwa_syg:
+                    messagebox.showerror("Błąd", "Wybierz sygnał do transformacji!")
+                    return
+                kod_syg = self.kody_sygnalow[nazwa_syg]
+                parametry = self._pobierz_przetworzone_parametry(self.pola_parametrow_trans)
+                fs = float(self.pole_czestotliwosc_probkowania.get())
+                
+                def _zbierz_probki(N):
+                    tmp_sygnal = GeneratorSygnalu(zrodlo_sygnalu=kod_syg, czestotliwosc_probkowania=fs, **parametry)
+                    return np.array([next(tmp_sygnal) for _ in range(N)])
+
+        except Exception as e:
+            messagebox.showerror("Błąd", str(e))
+            return
+
+        zakres_n = [2**i for i in range(9, 14)]
+        wyniki = {"N": zakres_n}
+
+        self.loguj_wiadomosc(f"Rozpoczynam benchmark dla N od 512 do 8192...")
+
+        typy = ["DFT", "FFT DIT", "FFT DIF", "DCT", "FCT", "WHT", "FWHT"]
+        for k in typy: wyniki[k] = []
+        
+        for N in zakres_n:
+            px = _zbierz_probki(N)
+            
+            t0 = time.time()
+            TransformacjaSygnalu.dyskretna_transformacja_fouriera(px)
+            wyniki["DFT"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.szybka_transformacja_fouriera_z_decymacja_w_czasie(px)
+            wyniki["FFT DIT"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.szybka_transformacja_fouriera_z_decymacja_w_czestotliwosci(px)
+            wyniki["FFT DIF"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.dyskretna_transformacja_kosinusowa(px)
+            wyniki["DCT"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.szybka_transformacja_kosinusowa(px)
+            wyniki["FCT"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.transformacja_walsha_hadamarda(px)
+            wyniki["WHT"].append(time.time() - t0)
+
+            t0 = time.time()
+            TransformacjaSygnalu.szybka_transformacja_walsha_hadamarda(px)
+            wyniki["FWHT"].append(time.time() - t0)
+
+        self.loguj_wiadomosc("Benchmark zakończony. Wyświetlam wyniki.")
+        
+        for tab_id in self.notatnik_wizualizacji.tabs():
+            if self.notatnik_wizualizacji.tab(tab_id, "text") == "Benchmark":
+                self.notatnik_wizualizacji.forget(tab_id)
+                break
+
+        ramka_bench = tk.Frame(self.notatnik_wizualizacji, bg="#2b2b2b")
+        self.notatnik_wizualizacji.add(ramka_bench, text="Benchmark")
+        self.notatnik_wizualizacji.select(ramka_bench)
+
+        fig = plt.Figure(figsize=(10, 6), facecolor='#2b2b2b')
+        ax = fig.add_subplot(111)
+
+        kolory = ['cyan', 'magenta', 'lime', 'yellow', 'red', 'orange', 'pink']
+        markery = ['o', 's', '^', 'D', 'x']
+        
+        for i, t in enumerate(typy):
+            ax.plot(zakres_n, wyniki[t], color=kolory[i%len(kolory)], marker=markery[i%len(markery)], label=t, linewidth=2)
+
+        ax.set_xscale('log', base=2)
+        ax.set_yscale('log')
+        ax.set_title("Złożoność czasowa transformat", color='white')
+        ax.set_xlabel("Liczba próbek N", color='white')
+        ax.set_ylabel("Czas wykonywania [s]", color='white')
+        ax.grid(True, which="both", ls="--", color='gray', alpha=0.5)
+        ax.set_facecolor('#2b2b2b')
+        ax.tick_params(colors='white')
+        for spine in ax.spines.values():
+            spine.set_color('gray')
+        ax.legend(facecolor='#2b2b2b', labelcolor='white')
+        fig.tight_layout()
+
+        plotno = FigureCanvasTkAgg(fig, master=ramka_bench)
+        plotno.draw()
+        plotno.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        ramka_tabeli = tk.Frame(ramka_bench, bg="#2b2b2b")
+        ramka_tabeli.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        style = ttk.Style()
+        style.configure("Dark.Treeview", background="#333333", fieldbackground="#333333", foreground="white", rowheight=25, borderwidth=0)
+        style.map("Dark.Treeview", background=[('selected', '#4fc3f7')], foreground=[('selected', 'black')])
+        style.configure("Dark.Treeview.Heading", background="#444444", foreground="white", font=("Arial", 10, "bold"), borderwidth=1)
+        
+        kolumny = ["N"] + typy
+        tabela = ttk.Treeview(ramka_tabeli, columns=kolumny, show='headings', height=len(zakres_n), style="Dark.Treeview")
+        for col in kolumny:
+            tabela.heading(col, text=col)
+            tabela.column(col, width=100, anchor=tk.CENTER)
+            
+        for i, n in enumerate(zakres_n):
+            wartosci = [n] + [f"{wyniki[t][i]:.6f}" for t in typy]
+            tabela.insert("", "end", values=wartosci)
+            
+        tabela.pack(fill=tk.BOTH, expand=True)
+
+
+    def wykonaj_transformacje_odwrotna(self):
+        if not self.ostatnia_transformata:
+            messagebox.showerror("Błąd", "Brak danych z transformacji!")
+            return
+
+        wynik = self.ostatnia_transformata['wynik']
+        fp = self.ostatnia_transformata['fp']
+        typ_trans = self.ostatnia_transformata['typ_trans']
+        implementacja = self.ostatnia_transformata['implementacja']
+        dziedzina = self.ostatnia_transformata.get('dziedzina', '')
+        liczba_probek = self.ostatnia_transformata['liczba_probek']
+
+        info_dec = f" [{dziedzina}]" if typ_trans == "Szybka Transformacja Fouriera (FFT)" else ""
+        self.loguj_wiadomosc(f"Wywoływanie transformacji odwrotnej dla {typ_trans}{info_dec} ({implementacja})...")
+        
+        start_time = time.time()
+        nowy_wynik = None
+        
+        try:
+            if implementacja == "Biblioteka gotowa (Scipy)":
+                if "Fouriera" in typ_trans:
+                    nowy_wynik = sp_fft.ifft(wynik) * liczba_probek
+                elif "Kosinusowa" in typ_trans:
+                    nowy_wynik = sp_fft.idct(wynik, type=2, norm='ortho')
+                elif "Walsha-Hadamarda" in typ_trans:
+                    H = sp_linalg.hadamard(liczba_probek)
+                    nowy_wynik = np.dot(H, wynik) / liczba_probek
+            else:
+                if "Fouriera" in typ_trans:
+                    if "Szybka" in typ_trans:
+                        nowy_wynik = TransformacjaSygnalu.odwrotna_szybka_transformacja_fouriera(wynik)
+                    else:
+                        nowy_wynik = TransformacjaSygnalu.odwrotna_dyskretna_transformacja_fouriera(wynik)
+                elif "Kosinusowa" in typ_trans:
+                    nowy_wynik = sp_fft.idct(wynik, type=2, norm='ortho')
+                    self.loguj_wiadomosc("Użyto bibliotecznego IDCT jako odwrotności do DCT.")
+                elif "Walsha-Hadamarda" in typ_trans:
+                    if "Szybka" in typ_trans:
+                        nowy_wynik = TransformacjaSygnalu.szybka_transformacja_walsha_hadamarda(wynik)
+                    else:
+                        nowy_wynik = TransformacjaSygnalu.transformacja_walsha_hadamarda(wynik)
+
+            moj_czas = time.time() - start_time
+            self.loguj_wiadomosc(f"Zakończono transformację odwrotną. Czas: {moj_czas:.6f} s")
+            
+            self.sygnal_glowny = GeneratorSygnalu.z_tablicy(nowy_wynik, fp)
+            self.czy_widmo = False
+            self.wizualizuj_sygnal()
+
+        except Exception as e:
+            messagebox.showerror("Błąd transformacji odwrotnej", str(e))
 
     def pokaz_statystyki(self):
         if not self.sygnal_glowny:
