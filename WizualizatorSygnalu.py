@@ -3,11 +3,41 @@ import matplotlib.pyplot as plt
 
 class WizualizatorSygnalu:
     @staticmethod
-    def _rysuj_wspolne(os_czasu, dane, os_czasowa, os_histogramu, liczba_przedzialow, etykieta, kolor, czy_dyskretny, etykieta_x="", czy_widmo=False):
+    def _zaznacz_piki(os_wykresu, os_x, dane, kolor, maks_pikow=5, prog_wzgledny=0.1):
+        amplitudy = np.abs(np.asarray(dane))
+        N = len(amplitudy)
+        if N < 3:
+            return
+
+        maks = np.max(amplitudy)
+        if np.isclose(maks, 0):
+            return
+        prog = maks * prog_wzgledny
+
+        kandydaci = []
+        for i in range(1, N - 1):
+            if amplitudy[i] >= amplitudy[i - 1] and amplitudy[i] > amplitudy[i + 1] and amplitudy[i] >= prog:
+                kandydaci.append(i)
+
+        kandydaci.sort(key=lambda i: amplitudy[i], reverse=True)
+        wybrane = sorted(kandydaci[:maks_pikow])
+
+        for i in wybrane:
+            os_wykresu.plot(os_x[i], dane[i], marker='v', color=kolor, markersize=7, zorder=6)
+            os_wykresu.annotate(f"{os_x[i]:.2f} Hz",
+                                xy=(os_x[i], dane[i]),
+                                xytext=(0, 9), textcoords='offset points',
+                                ha='center', va='bottom', fontsize=8, color='white', zorder=7,
+                                bbox=dict(boxstyle='round,pad=0.25', fc='#1a1a1a', ec=kolor, alpha=0.85))
+
+    @staticmethod
+    def _rysuj_wspolne(os_czasu, dane, os_czasowa, os_histogramu, liczba_przedzialow, etykieta, kolor, czy_dyskretny, etykieta_x="", czy_widmo=False, zaznacz_piki=False):
         if czy_widmo:
             markerline, stemlines, baseline = os_czasowa.stem(os_czasu, dane, basefmt=" ", markerfmt='o', linefmt=kolor)
             plt.setp(markerline, color=kolor, markersize=3)
             plt.setp(stemlines, color=kolor, linewidth=1, alpha=0.5)
+            if zaznacz_piki:
+                WizualizatorSygnalu._zaznacz_piki(os_czasowa, os_czasu, dane, kolor)
         elif czy_dyskretny:
             os_czasowa.scatter(os_czasu, dane, s=2, color=kolor)
         else:
@@ -16,6 +46,9 @@ class WizualizatorSygnalu:
         if etykieta_x:
             os_czasowa.set_xlabel(etykieta_x)
         os_czasowa.grid(True, linestyle='--', color='gray', alpha=0.5)
+
+        if os_histogramu is None:
+            return
 
         minimum_danych = np.min(dane)
         maksimum_danych = np.max(dane)
@@ -48,31 +81,43 @@ class WizualizatorSygnalu:
 
         if not np.iscomplexobj(probki):
             # Sygnal Rzeczywisty
-            wykres, (os_czasowa, os_histogramu) = plt.subplots(2, 1, figsize=(10, 8))
+            if czy_widmo:
+                wykres, os_czasowa = plt.subplots(1, 1, figsize=(10, 6))
+                os_histogramu = None
+            else:
+                wykres, (os_czasowa, os_histogramu) = plt.subplots(2, 1, figsize=(10, 8))
             wykres.patch.set_facecolor('#2b2b2b')
             wykres.suptitle(tytul)
-            WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, os_czasowa, os_histogramu, liczba_przedzialow, "Amplituda", "cyan", czy_dyskretny, etykieta_x, czy_widmo)
-            os_czasowa.set_title("Przebieg sygnału")
-            os_histogramu.set_title("Histogram")
+            WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, os_czasowa, os_histogramu, liczba_przedzialow, "Amplituda", "cyan", czy_dyskretny, etykieta_x, czy_widmo, zaznacz_piki=czy_widmo)
+            os_czasowa.set_title("Widmo" if czy_widmo else "Przebieg sygnału")
+            if os_histogramu is not None:
+                os_histogramu.set_title("Histogram")
             wykres.tight_layout(pad=2.0, h_pad=2.5, rect=(0, 0, 1, 0.95))
             wykresy.append(("Sygnał Rzeczywisty", wykres))
         else:
             # Sygnal zespolony
             for typ_wykresu in ['rzecz_uroj', 'modul_faza']:
-                wykres, osie = plt.subplots(2, 2, figsize=(12, 10))
+                if czy_widmo:
+                    wykres, osie = plt.subplots(2, 1, figsize=(10, 9))
+                    os_gora, os_dol = osie[0], osie[1]
+                    hist_gora = hist_dol = None
+                else:
+                    wykres, osie = plt.subplots(2, 2, figsize=(12, 10))
+                    os_gora, os_dol = osie[0, 0], osie[1, 0]
+                    hist_gora, hist_dol = osie[0, 1], osie[1, 1]
                 wykres.patch.set_facecolor('#2b2b2b')
 
                 if typ_wykresu == 'rzecz_uroj':
-                    WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, osie[0, 0], osie[0, 1], liczba_przedzialow, "Część Rzeczywista", "cyan", czy_dyskretny, etykieta_x, czy_widmo)
-                    WizualizatorSygnalu._rysuj_wspolne(os_x, probki.imag, osie[1, 0], osie[1, 1], liczba_przedzialow, "Część Urojona", "magenta", czy_dyskretny, etykieta_x, czy_widmo)
-                    osie[0, 0].set_title("Część Rzeczywista (Real)")
-                    osie[1, 0].set_title("Część Urojona (Imag)")
+                    WizualizatorSygnalu._rysuj_wspolne(os_x, probki.real, os_gora, hist_gora, liczba_przedzialow, "Część Rzeczywista", "cyan", czy_dyskretny, etykieta_x, czy_widmo, zaznacz_piki=czy_widmo)
+                    WizualizatorSygnalu._rysuj_wspolne(os_x, probki.imag, os_dol, hist_dol, liczba_przedzialow, "Część Urojona", "magenta", czy_dyskretny, etykieta_x, czy_widmo, zaznacz_piki=czy_widmo)
+                    os_gora.set_title("Część Rzeczywista (Real)")
+                    os_dol.set_title("Część Urojona (Imag)")
                     wykresy.append(("Rzeczywista/Urojona", wykres))
                 else:
-                    WizualizatorSygnalu._rysuj_wspolne(os_x, np.abs(probki), osie[0, 0], osie[0, 1], liczba_przedzialow, "Moduł", "lime", czy_dyskretny, etykieta_x, czy_widmo)
-                    WizualizatorSygnalu._rysuj_wspolne(os_x, np.angle(probki), osie[1, 0], osie[1, 1], liczba_przedzialow, "Faza", "yellow", czy_dyskretny, etykieta_x, czy_widmo)
-                    osie[0, 0].set_title("Moduł (Abs)")
-                    osie[1, 0].set_title("Faza (Angle)")
+                    WizualizatorSygnalu._rysuj_wspolne(os_x, np.abs(probki), os_gora, hist_gora, liczba_przedzialow, "Moduł", "lime", czy_dyskretny, etykieta_x, czy_widmo, zaznacz_piki=czy_widmo)
+                    WizualizatorSygnalu._rysuj_wspolne(os_x, np.angle(probki), os_dol, hist_dol, liczba_przedzialow, "Faza", "yellow", czy_dyskretny, etykieta_x, czy_widmo)
+                    os_gora.set_title("Moduł (Abs)")
+                    os_dol.set_title("Faza (Angle)")
                     wykresy.append(("Moduł/Faza", wykres))
                 wykres.tight_layout(pad=2.0, h_pad=2.5)
 
